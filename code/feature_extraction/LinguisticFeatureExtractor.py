@@ -13,9 +13,12 @@ class CharacterCounter:
     FEATURE IDEAS:
         - Post Title same as Article Title (0,1)
             Maybe preprocess retweets e.g. [RT @fionamatthias: 10 ways the expat life Is like a continual espresso buzz via @WSJ] -> 10 Ways the Expat Life Is Like a Continual Espresso Buzz - Expat
+        - Match known clickbait indicators
+            https://www.quora.com/What-are-the-most-commonly-used-words-in-clickbait-titles-Those-news-headlines-that-go-like-You-wont-believe-___-or-This-___-will-restore-your-faith-in-humanity-X-easy-tricks-to-___-They-hint-at-the-article-and-tempt-you-to-click
+            https://www.cnet.com/news/facebook-nixes-click-bait-headlines-in-users-news-feeds/
     """
 
-    def chars(self, string):
+    def numchars(self, string):
         """Determine the number of characters in a string."""
 
         # Strip spaces
@@ -26,7 +29,12 @@ class CharacterCounter:
     def diff(self, string, other_string):
         """Calculate the (absolute) difference in number of characters between two strings."""
 
-        return abs(self.chars(string) - self.chars(other_string))
+        return abs(self.numchars(string) - self.numchars(other_string))
+
+    def ratio(self, string, other_string):
+        """Calculate the number of characters ratio between two strings."""
+
+        return self.numchars(string) / self.numchars(other_string)
 
 
 class WordCounter:
@@ -45,22 +53,41 @@ class WordCounter:
     """
 
     # Regex pattern for all relevant punctuation
-    puncpat = re.compile(r"[,;@#?!&$\"\-\-]+ *")
+    dashpat = re.compile(r"-")
+    doubledashpat = re.compile(r"--")
+    puncpat = re.compile(r"[,;@#?!&$\"]+ *")
 
     def words(self, sentence):
-        """Return the word count of a string."""
+        """Return all words in a string."""
 
         # Replace punctuation with space
         sentence = self._clean(sentence)
 
-        return len(sentence.split())
+        return sentence.split()
+
+    def numwords(self, sentence):
+        """Return the word count of a string."""
+
+        return len(self.words(sentence))
 
     def diff(self, sentence, other_sentence):
         """Calculate the (absolute) difference in number of words between two sentences."""
 
-        return abs(self.words(sentence) - self.words(other_sentence))
+        return abs(self.numwords(sentence) - self.numwords(other_sentence))
+
+    def ratio(self, string, other_string):
+        """Calculate the number of words ratio between two sentences."""
+
+        return self.numwords(string) / self.numwords(other_string)
 
     def _clean(self, sentence):
         """Replace punctuation with a space."""
 
+        # First replace double dash with space
+        sentence = self.doubledashpat.sub(" ", sentence)
+
+        # Then replace single dash with nothing
+        sentence = self.dashpat.sub("", sentence)
+
+        # Then replace the remaining punctuation
         return self.puncpat.sub(" ", sentence)
