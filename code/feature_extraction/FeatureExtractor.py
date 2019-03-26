@@ -21,21 +21,23 @@ class FeatureExtractor:
         """Extracts the relevant features from a Pandas dataframe."""
 
         # Get targets
-        labels = self.get_targets(self.df['truthClass'])
+        labels = self.__get_targets(self.df['truthClass'])
         self.df.drop('truthClass', axis=1, inplace=True)
 
         # Get features
-        features = self.df.apply(self.get_features, axis=1)
+        features = self.df.apply(self.__get_features, axis=1)
 
         return labels, features
 
-    def get_targets(self, truthClasses: pd.Series) -> pd.Series:
+    def __get_targets(self, truth_classes: pd.Series) -> pd.Series:
         """Maps categorical truth classes to integer targets."""
 
-        labels, _ = pd.factorize(truthClasses, sort=False)
+        labels, _ = pd.factorize(truth_classes, sort=False)
         return labels
 
-    def get_features(self, row: pd.Series) -> pd.Series:
+    def __get_features(self, row: pd.Series) -> pd.Series:
+        """Extracts features from dataset row."""
+
         features = pd.Series()
 
         # ------

@@ -34,13 +34,20 @@ class Util:
     def ratio(left, right):
 
         # Catch edge cases
-        if not left or left == 0 or not right or right == 0:
+        # TODO: check if `<= 0' check makes sense
+        if not left or left <= 0 or not right or right <= 0:
             return -1
 
         return abs(left / right)
 
     @staticmethod
     def diff(left, right):
+
+        # Catch edge cases
+        # TODO: check if `<= 0' check makes sense
+        if not left or left <= 0 or not right or right <= 0:
+            return -1
+
         return abs(left - right)
 
     @staticmethod
