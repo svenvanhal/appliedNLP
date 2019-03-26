@@ -44,7 +44,7 @@ class FeatureExtractor:
 
         # Get relevant fields
         post_title = row['postText']
-        image_text = None
+        image_text = None  # TODO!
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
         article_title = row['targetTitle']
@@ -105,10 +105,10 @@ class FeatureExtractor:
         features['diffWords_PostTitleArticleKeywords'] = Util.diff(nw_post_title, nw_article_keywords)
 
         # num of question marks in post title
-        # TODO
+        features['numQuestionmarksPostTitle'] = Util.count_specific_char(post_title, '?')
 
         # num of characters ratio article paragraphs \& post title
-        # TODO
+        features['ratioChars_ArticleParagraphsPostTitle'] = Util.ratio(nc_article_paragraphs, nc_post_title)
 
         # num of characters ratio article paragraphs \& article desc
         features['ratioChars_ArticleParagraphsArticleDesc'] = Util.ratio(nc_article_paragraphs, nc_article_desc)

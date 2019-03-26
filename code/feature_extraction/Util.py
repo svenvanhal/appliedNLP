@@ -73,3 +73,23 @@ class Util:
 
         # Return string length
         return len(processed)
+
+    @staticmethod
+    def count_specific_char(obj, char):
+
+        # Catch empty post titles
+        # TODO: check if we need to enable this here as well (is unclear from the paper)
+        # if obj is None:
+        #     return -1
+
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+
+            # Catch empty lists
+            if len(obj) == 0:
+                return -1
+
+            # Sum the number of occurrences in each list item
+            return sum([Util.count_specific_char(item, char) for item in obj])
+
+        return obj.count(char)
