@@ -1,4 +1,5 @@
 import re
+from PyDictionary import PyDictionary
 
 
 class WordTools:
@@ -38,6 +39,24 @@ class WordTools:
 
         return obj.split()
 
+    def __get_words_from_list(self, obj):
+        """Return all words in a list of strings"""
+
+        # Check if it is really a list
+        if isinstance(obj, list):
+            # Catch empty lists
+            if len(obj) == 0:
+                return []
+
+            # Extract all words and return one list
+            words = []
+            for w in obj:
+                words.extend(self.__get_words(w))
+
+            return words
+        else:
+            raise TypeError("List was expected")
+
     def __clean(self, obj):
         """Replace punctuation with a space."""
 
@@ -49,3 +68,39 @@ class WordTools:
 
         # Then replace the remaining punctuation
         return self.puncpat.sub(" ", obj)
+
+    def get_distinct_words(self, obj):
+
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+            words = self.__get_words_from_list(obj)
+        else:
+            words = self.__get_words(obj)
+
+        # Cast to set to make distinct set
+        distinct = list(set(words))
+
+        return distinct
+
+    def formal(self, distinct_words):
+        """Returns a list of all formal words
+        This method uses the PyDictionary lib. This plugin will search for the meaning of words on WordNet:
+        http://wordnetweb.princeton.edu.
+
+        Note:
+            - There are two methods in PyDictionary for meanings - .meaning vs .googlemeaning
+            - Meaning is the best as it uses the more strict WordNet dictionary. ex: iOS is not defined in WordNet but
+            is in google dictionary
+        """
+
+        # Search for all words simultaneously
+        pydict = PyDictionary(distinct_words)
+        meanings = pydict.getMeanings()
+
+        # Formal words have a meaning
+        formal = list(k for k, v in meanings.items() if v is not None)
+
+        # TODO: do we also need the informal words?
+        # informal = list(k for k, v in meanings.items() if v is None)
+
+        return formal
