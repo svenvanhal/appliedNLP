@@ -2,6 +2,7 @@ import pandas as pd
 
 from .WordTools import WordTools
 from .Util import Util
+from .ImageHelper import ImageHelper
 
 
 class FeatureExtractor:
@@ -44,7 +45,7 @@ class FeatureExtractor:
 
         # Get relevant fields
         post_title = row['postText']
-        image_text = None  # TODO!
+        image_text = ImageHelper.get_text(row['postMedia'])
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
         article_title = row['targetTitle']
