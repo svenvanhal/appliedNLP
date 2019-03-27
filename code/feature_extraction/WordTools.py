@@ -1,4 +1,6 @@
+import os
 import re
+import sys
 from PyDictionary import PyDictionary
 
 
@@ -93,9 +95,16 @@ class WordTools:
             is in google dictionary
         """
 
+        # PyDictionary will print errors if the word was not found
+        # We are going to ignore that by changing stdout
+        sys.stdout = open(os.devnull, 'w')
+
         # Search for all words simultaneously
         pydict = PyDictionary(distinct_words)
         meanings = pydict.getMeanings()
+
+        # Restore stdout
+        sys.stdout = sys.__stdout__
 
         # Formal words have a meaning
         formal = list(k for k, v in meanings.items() if v is not None)
