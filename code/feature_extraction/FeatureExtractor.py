@@ -66,6 +66,12 @@ class FeatureExtractor:
         nw_article_title = self.wordtools.count_words(article_title)
         # Unused: nw_article_paragraphs = self.wordtools.count_words(article_paragraphs)
 
+        # Distinct words lists
+        distinct_post_title = self.wordtools.get_distinct_words(post_title)
+
+        # Get formal words
+        formalw_post_title = self.wordtools.formal(distinct_post_title)
+
         # ------
 
         # num of characters in post title
@@ -87,7 +93,7 @@ class FeatureExtractor:
         features['numWords_PostTitle'] = nw_post_title
 
         # num of formal words in post title
-        # TODO
+        features['numFormalWords_PostTitle'] = len(formalw_post_title)
 
         # num of words ratio article description \& post title
         features['ratioWords_ArticleDescPostTitle'] = Util.diff(nw_article_description, nw_post_title)
