@@ -8,8 +8,9 @@ from .ImageHelper import ImageHelper
 class FeatureExtractor:
     required_cols = ['postText', 'targetKeywords', 'targetDescription', 'targetTitle', 'targetParagraphs']
 
-    def __init__(self, df):
+    def __init__(self, df, data_path):
         self.wordtools = WordTools()
+        self.imagehelper = ImageHelper(data_path)
 
         # Check required columns
         if not set(self.required_cols).issubset(df.columns):
@@ -45,7 +46,7 @@ class FeatureExtractor:
 
         # Get relevant fields
         post_title = row['postText']
-        image_text = ImageHelper.get_text(row['postMedia'])
+        image_text = self.imagehelper.get_text(row['postMedia'])
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
         article_title = row['targetTitle']
