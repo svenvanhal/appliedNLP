@@ -9,3 +9,6 @@ The Clickbait Challenge datasets (2016 and 2017) can be downloaded and unpacked 
 
 - [Download 2016](http://www.uni-weimar.de/medien/webis/corpora/corpus-webis-clickbait-17/clickbait17-train-170331.zip)
 - [Download 2017](http://www.uni-weimar.de/medien/webis/corpora/corpus-webis-clickbait-17/clickbait17-train-170630.zip)
+
+## OCR requirements
+- Tesseract: https://github.com/tesseract-ocr/tesseract/wiki
