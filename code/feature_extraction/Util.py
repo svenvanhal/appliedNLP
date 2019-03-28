@@ -43,9 +43,8 @@ class Util:
     @staticmethod
     def diff(left, right):
 
-        # Catch edge cases
-        # TODO: check if `<= 0' check makes sense
-        if not left or left <= 0 or not right or right <= 0:
+        # Catch edge cases (check that both sides "exist")
+        if not left or left < 0 or not right or right < 0:
             return -1
 
         return abs(left - right)
