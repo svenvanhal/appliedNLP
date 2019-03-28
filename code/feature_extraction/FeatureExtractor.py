@@ -31,6 +31,10 @@ class FeatureExtractor:
         Extracts the relevant features from a Pandas dataframe.
         """
 
+        if self.df is None:
+            raise ValueError(
+                "No dataframe defined. Please call " + '\033[1m' + "FeatureExtractor.set_df()" + '\033[0m' + " first.")
+
         # Get targets
         labels = self.__get_targets(self.df['truthClass'])
         self.df.drop('truthClass', axis=1, inplace=True)
@@ -52,10 +56,6 @@ class FeatureExtractor:
         """
         Extracts features from dataset row.
         """
-
-        if self.df is None:
-            raise ValueError(
-                "No dataframe defined. Please call " + '\033[1m' + "FeatureExtractor." + '\033[0m' + " first.")
 
         features = pd.Series()
 
