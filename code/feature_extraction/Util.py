@@ -34,7 +34,7 @@ class Util:
         """
 
         # Catch empty post titles (and empty lists)
-        if not obj:
+        if not obj and obj != "":
             return -1
 
         # Catch non-strings (probably list / pd.Series)

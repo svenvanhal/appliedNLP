@@ -8,9 +8,16 @@ from .ImageHelper import ImageHelper
 class FeatureExtractor:
     required_cols = ['postText', 'targetKeywords', 'targetDescription', 'targetTitle', 'targetParagraphs']
 
-    def __init__(self, df, data_path):
+    df = None
+
+    def __init__(self, data_path, tesseract_path):
         self.wordtools = WordTools()
-        self.imagehelper = ImageHelper(data_path)
+        self.imagehelper = ImageHelper(data_path, tesseract_path)
+
+    def set_df(self, df: pd.DataFrame) -> None:
+        """
+        Sets dataframe to extract features from.
+        """
 
         # Check required columns
         if not set(self.required_cols).issubset(df.columns):
@@ -46,19 +53,25 @@ class FeatureExtractor:
         Extracts features from dataset row.
         """
 
+        if self.df is None:
+            raise ValueError(
+                "No dataframe defined. Please call " + '\033[1m' + "FeatureExtractor." + '\033[0m' + " first.")
+
         features = pd.Series()
 
         # ------
 
         # Get relevant fields
         post_title = row['postText']
-        image_text = self.imagehelper.get_text(row['postMedia'])
+        post_media = row['postMedia']
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
         article_title = row['targetTitle']
         article_paragraphs = row['targetParagraphs']
 
         # Prep
+        image_text = self.imagehelper.get_text(post_media)
+
         w_post_title = self.wordtools.get_words(post_title)
         wu_post_title = list(set(w_post_title))
         # TODO: paper says 'set' of formal words, but wouldn't the 'list' of words make more sense?

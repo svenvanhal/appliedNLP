@@ -2,35 +2,41 @@ try:
     from PIL import Image
 except ImportError:
     import Image
-import pytesseract
-from pathlib import Path
 
-# Make sure that Tesseract is defined even if it is not in $PATH variable
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+import os
+import pytesseract
 
 
 class ImageHelper:
-    def __init__(self, data_path):
-        project_path = Path(__file__).parent.parent
-        data_path = (project_path / data_path)
 
-        self.data_path = data_path
+    def __init__(self, data_path, tesseract_path=None):
+        """
+        :param data_path: Relative path to images directory.
+        :param tesseract_path: Absolute path to the Tesseract-OCR installation directory.
+        """
+
+        # Set path to dataset directory
+        self.data_path = os.path.expandvars(data_path)
+
+        # Update Tesseract path if needed
+        if tesseract_path:
+            pytesseract.pytesseract.tesseract_cmd = os.path.expandvars(tesseract_path)
 
     def get_text(self, image_path):
-        # Check if input is not a list from pandas
-        if not isinstance(image_path, str):
-            if len(image_path) == 0:
-                image_path = ""
-            elif len(image_path) == 1:
-                image_path = image_path[0]
-            else:
-                # Article has multiple pictures: this should not occur
-                image_path = ""
+        """
+        Runs OCR on image.
+        Input format: list() with -one- element (as in the clickbait datasets).
+        """
 
-        # Return empty string if image path was undefined
-        if image_path == "":
+        # Check if post has media
+        if not image_path or not image_path[0]:
             return ""
 
-        # Construct path and do OCR on the image
-        file_path = (self.data_path / image_path).resolve()
-        return pytesseract.image_to_string(Image.open(file_path))
+        # Get full image path
+        image_path = os.path.join(self.data_path, image_path[0])
+
+        # Load image
+        img = Image.open(image_path)
+
+        # Perform OCR
+        return pytesseract.image_to_string(img)
