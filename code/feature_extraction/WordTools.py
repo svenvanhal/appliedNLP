@@ -25,20 +25,31 @@ class WordTools:
         except LookupError:
             download('wordnet')
 
-    def get_words(self, obj, unique=False) -> list:
+    def get_words(self, obj) -> set:
         """
         Get either all words in a string (or iterable of strings), or only the unique words.
         All words are converted to lowercase and punctuation is stripped.
         Returns an empty list for invalid arguments or empty input arguments.
         """
 
-        # Get all words
-        words = self.__get_all_words(obj)
+        # Catch empty sentences
+        if not obj:
+            return set()
 
-        # Return either only unique words or all words
-        return list(set(words)) if unique else words
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+            # Convert each sentence to words
+            words = map(self.get_words, obj)
 
-    def count_words(self, obj, distinct=False):
+            # Flatten result [["a", "b"], ["c"]] to ["a", "b", "c"]
+            return set(chain.from_iterable(words))
+
+        # Replace punctuation with space, convert to lowercase and split on space
+        words = self.__clean(obj).split()
+
+        return set(words)
+
+    def count_words(self, obj):
         """
         Return the word count of a string.
         Wrapper around len(words) to accommodate lists of words (for which the count is averaged)
@@ -50,7 +61,7 @@ class WordTools:
             return -1
 
         # Get all (lowercased) words in string or list
-        words = self.get_words(obj, unique=distinct)
+        words = self.get_words(obj)
 
         # Average the number of words in a list
         if not isinstance(obj, str):
@@ -59,36 +70,14 @@ class WordTools:
         # Return the number of words in the sentence
         return len(words)
 
-    def formal_words(self, distinct_words):
+    def formal_words(self, distinct_words) -> set:
         """
-        Returns a list of all formal words, using WordNet via NLTK.
+        Returns a set of all formal words, using WordNet via NLTK.
         N.B.: Is case-sensitive!
         """
 
         # Get the set of all words which exist in the WordNet corpus
-        return {word for word in distinct_words if wn.synsets(word)}
-
-    def __get_all_words(self, obj) -> list:
-        """
-        Return all words in a string or iterable of strings.
-        """
-
-        # Catch empty sentences
-        if not obj and obj != "":
-            return []
-
-        # Catch non-strings (probably list / pd.Series)
-        if not isinstance(obj, str):
-            # Convert each sentence to words
-            words = map(self.__get_all_words, obj)
-
-            # Flatten result [["a", "b"], ["c"]] to ["a", "b", "c"]
-            return list(chain.from_iterable(words))
-
-        # Replace punctuation with space, convert to lowercase
-        obj = self.__clean(obj)
-
-        return obj.split()
+        return set(word for word in distinct_words if wn.synsets(word))
 
     def __clean(self, obj: str) -> str:
         """
