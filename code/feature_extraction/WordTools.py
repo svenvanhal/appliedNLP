@@ -36,7 +36,7 @@ class WordTools:
         """
 
         # Catch empty sentences (also catches empty list)
-        if not obj:
+        if not obj and obj != "":
             return -1
 
         # Get all (lowercased) words in string or list
@@ -79,7 +79,7 @@ class WordTools:
         """
 
         # Catch empty sentences
-        if not obj:
+        if not obj and obj != "":
             return []
 
         # Catch non-strings (probably list / pd.Series)

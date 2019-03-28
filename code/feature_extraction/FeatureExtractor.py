@@ -2,13 +2,22 @@ import pandas as pd
 
 from .WordTools import WordTools
 from .Util import Util
+from .ImageHelper import ImageHelper
 
 
 class FeatureExtractor:
     required_cols = ['postText', 'targetKeywords', 'targetDescription', 'targetTitle', 'targetParagraphs']
 
-    def __init__(self, df):
+    df = None
+
+    def __init__(self, data_path, tesseract_path):
         self.wordtools = WordTools()
+        self.imagehelper = ImageHelper(data_path, tesseract_path)
+
+    def set_df(self, df: pd.DataFrame) -> None:
+        """
+        Sets dataframe to extract features from.
+        """
 
         # Check required columns
         if not set(self.required_cols).issubset(df.columns):
@@ -21,6 +30,10 @@ class FeatureExtractor:
         """
         Extracts the relevant features from a Pandas dataframe.
         """
+
+        if self.df is None:
+            raise ValueError(
+                "No dataframe defined. Please call " + '\033[1m' + "FeatureExtractor.set_df()" + '\033[0m' + " first.")
 
         # Get targets
         labels = self.__get_targets(self.df['truthClass'])
@@ -50,13 +63,15 @@ class FeatureExtractor:
 
         # Get relevant fields
         post_title = row['postText']
-        image_text = None  # TODO!
+        post_media = row['postMedia']
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
         article_title = row['targetTitle']
         article_paragraphs = row['targetParagraphs']
 
         # Prep
+        image_text = self.imagehelper.get_text(post_media)
+
         w_post_title = self.wordtools.get_words(post_title)
         wu_post_title = list(set(w_post_title))
         # TODO: paper says 'set' of formal words, but wouldn't the 'list' of words make more sense?
