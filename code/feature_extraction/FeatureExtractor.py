@@ -50,6 +50,12 @@ class FeatureExtractor:
         article_title = row['targetTitle']
         article_paragraphs = row['targetParagraphs']
 
+        # Prep
+        w_post_title = self.wordtools.get_words(post_title)
+        wu_post_title = list(set(w_post_title))
+        # TODO: paper says 'set' of formal words, but wouldn't the 'list' of words make more sense?
+        wf_post_title = self.wordtools.formal_words(wu_post_title)
+
         # Calculate num characters
         nc_post_title = Util.count_chars(post_title)
         nc_post_image = Util.count_chars(image_text)
@@ -59,18 +65,15 @@ class FeatureExtractor:
         nc_article_paragraphs = Util.count_chars(article_paragraphs)
 
         # Calculate num words
-        nw_post_title = self.wordtools.count_words(post_title)
+        nw_post_title = len(w_post_title)
         nw_post_image = self.wordtools.count_words(image_text)
         nw_article_keywords = self.wordtools.count_words(article_keywords)
         nw_article_description = self.wordtools.count_words(article_description)
         nw_article_title = self.wordtools.count_words(article_title)
         # Unused: nw_article_paragraphs = self.wordtools.count_words(article_paragraphs)
 
-        # Distinct words lists
-        distinct_post_title = self.wordtools.get_distinct_words(post_title)
-
-        # Get formal words
-        formalw_post_title = self.wordtools.formal(distinct_post_title)
+        # Calculate num formal words
+        nwf_post_title = len(wf_post_title)
 
         # ------
 
@@ -93,7 +96,7 @@ class FeatureExtractor:
         features['numWords_PostTitle'] = nw_post_title
 
         # num of formal words in post title
-        features['numFormalWords_PostTitle'] = len(formalw_post_title)
+        features['numFormalWords_PostTitle'] = nwf_post_title
 
         # num of words ratio article description \& post title
         features['ratioWords_ArticleDescPostTitle'] = Util.diff(nw_article_description, nw_post_title)
