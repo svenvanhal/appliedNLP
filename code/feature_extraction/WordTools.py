@@ -1,8 +1,10 @@
-import os
 import re
-import sys
+
 from itertools import chain
-from PyDictionary import PyDictionary
+
+from nltk import download
+from nltk.data import find
+from nltk.corpus import wordnet as wn
 
 
 class WordTools:
@@ -14,6 +16,14 @@ class WordTools:
     dashpat = re.compile(r"-")
     doubledashpat = re.compile(r"--")  # TODO: 2 or more dashes
     puncpat = re.compile(r"[,;@#?!&$\"]+ *")
+
+    def __init__(self):
+
+        # Download the WordNet corpus if not installed
+        try:
+            find('corpora/wordnet.zip')
+        except LookupError:
+            download('wordnet')
 
     def get_words(self, obj, unique=False) -> list:
         """
@@ -51,27 +61,12 @@ class WordTools:
 
     def formal_words(self, distinct_words):
         """
-        Returns a list of all formal words, using PyDictionary.
+        Returns a list of all formal words, using WordNet via NLTK.
+        N.B.: Is case-sensitive!
         """
 
-        # PyDictionary will print errors if the word was not found
-        # We are going to ignore that by changing stdout
-        sys.stdout = open(os.devnull, 'w')
-
-        # Search for all words simultaneously
-        pydict = PyDictionary(distinct_words)
-        meanings = pydict.getMeanings()
-
-        # Restore stdout
-        sys.stdout = sys.__stdout__
-
-        # Formal words have a meaning
-        formal = list(k for k, v in meanings.items() if v is not None)
-
-        # TODO: do we also need the informal words?
-        # informal = list(k for k, v in meanings.items() if v is None)
-
-        return formal
+        # Get the set of all words which exist in the WordNet corpus
+        return {word for word in distinct_words if wn.synsets(word)}
 
     def __get_all_words(self, obj) -> list:
         """
