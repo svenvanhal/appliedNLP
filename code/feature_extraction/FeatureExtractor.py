@@ -18,7 +18,9 @@ class FeatureExtractor:
         self.df = df.copy()
 
     def extract_features(self):
-        """Extracts the relevant features from a Pandas dataframe."""
+        """
+        Extracts the relevant features from a Pandas dataframe.
+        """
 
         # Get targets
         labels = self.__get_targets(self.df['truthClass'])
@@ -30,13 +32,17 @@ class FeatureExtractor:
         return labels, features
 
     def __get_targets(self, truth_classes: pd.Series) -> pd.Series:
-        """Maps categorical truth classes to integer targets."""
+        """
+        Maps categorical truth classes to integer targets.
+        """
 
         labels, _ = pd.factorize(truth_classes, sort=False)
         return labels
 
     def __get_features(self, row: pd.Series) -> pd.Series:
-        """Extracts features from dataset row."""
+        """
+        Extracts features from dataset row.
+        """
 
         features = pd.Series()
 

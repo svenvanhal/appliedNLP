@@ -7,12 +7,12 @@ from PyDictionary import PyDictionary
 
 class WordTools:
     """
-    Process sentences and extract words.
+    Processes sentences to extract and count words.
     """
 
     # Regex pattern for all relevant punctuation
     dashpat = re.compile(r"-")
-    doubledashpat = re.compile(r"--")
+    doubledashpat = re.compile(r"--")  # TODO: 2 or more dashes
     puncpat = re.compile(r"[,;@#?!&$\"]+ *")
 
     def get_words(self, obj, unique=False) -> list:
@@ -35,8 +35,8 @@ class WordTools:
         Returns -1 for empty lists or non-existent strings. 0 for empty strings.
         """
 
-        # Catch empty sentences
-        if obj is None:
+        # Catch empty sentences (also catches empty list)
+        if not obj:
             return -1
 
         # Get all (lowercased) words in string or list
@@ -44,21 +44,14 @@ class WordTools:
 
         # Average the number of words in a list
         if not isinstance(obj, str):
-            if len(obj) == 0: return -1
             return len(words) / len(obj)
 
         # Return the number of words in the sentence
         return len(words)
 
     def formal_words(self, distinct_words):
-        """Returns a list of all formal words
-        This method uses the PyDictionary lib. This plugin will search for the meaning of words on WordNet:
-        http://wordnetweb.princeton.edu.
-
-        Note:
-            - There are two methods in PyDictionary for meanings - .meaning vs .googlemeaning
-            - Meaning is the best as it uses the more strict WordNet dictionary. ex: iOS is not defined in WordNet but
-            is in google dictionary
+        """
+        Returns a list of all formal words, using PyDictionary.
         """
 
         # PyDictionary will print errors if the word was not found
@@ -81,19 +74,16 @@ class WordTools:
         return formal
 
     def __get_all_words(self, obj) -> list:
-        """Return all words in a string or iterable of strings."""
+        """
+        Return all words in a string or iterable of strings.
+        """
 
         # Catch empty sentences
-        if obj is None:
+        if not obj:
             return []
 
         # Catch non-strings (probably list / pd.Series)
         if not isinstance(obj, str):
-
-            # Catch empty lists
-            if len(obj) == 0:
-                return []
-
             # Convert each sentence to words
             words = map(self.__get_all_words, obj)
 
@@ -106,7 +96,9 @@ class WordTools:
         return obj.split()
 
     def __clean(self, obj: str) -> str:
-        """Replace punctuation with a space, convert to lowercase."""
+        """
+        Replace punctuation with a space and converts input to lowercase.
+        """
 
         # First replace double dash with space
         obj = self.doubledashpat.sub(" ", obj)
