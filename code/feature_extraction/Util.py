@@ -1,40 +1,13 @@
 class Util:
-    """
-    CharCounter:
-
-        ASSUMPTIONS:
-            - Special characters do count for the `character length' but not as a word
-            - The `diff' methods return the absolute value
-
-        OBSERVATIONS:
-            - postTitle does not exist, just postText --> "[<text of the post with links removed>]". Analysis showed that the postText contains at most 1 element (so Y U an array?)
-
-        FEATURE IDEAS:
-            - Post Title same as Article Title (0,1)
-                Maybe preprocess retweets e.g. [RT @fionamatthias: 10 ways the expat life Is like a continual espresso buzz via @WSJ] -> 10 Ways the Expat Life Is Like a Continual Espresso Buzz - Expat
-            - Match known clickbait indicators
-                https://www.quora.com/What-are-the-most-commonly-used-words-in-clickbait-titles-Those-news-headlines-that-go-like-You-wont-believe-___-or-This-___-will-restore-your-faith-in-humanity-X-easy-tricks-to-___-They-hint-at-the-article-and-tempt-you-to-click
-                https://www.cnet.com/news/facebook-nixes-click-bait-headlines-in-users-news-feeds/
-
-    WordCounter:
-        WORD COUNT -- Harder Than It Sounds
-            Original approach: len(sentence.split()), but this also counts punctuation (e.g. '--' or '&') as words
-            Second approach: regex  re.compile(r'\S+')  (failed to recognize decimal numbers)
-            Third approach: cleaning text and split on space, problem: string.punctuation too broad
-              --> (sentence.translate(str.maketrans(' ', ' ', string.punctuation)))
-
-        So, problems:
-            word--word     (are two words)
-            U.S.           (is one word)
-            2.5            (is one 'word')
-            missing'space' (are two words)
-    """
 
     @staticmethod
     def ratio(left, right):
+        """
+        Returns the ratio between two numbers.
+        If any argument is undefined or <= 0, returns -1.
+        """
 
         # Catch edge cases
-        # TODO: check if `<= 0' check makes sense
         if not left or left <= 0 or not right or right <= 0:
             return -1
 
@@ -42,29 +15,30 @@ class Util:
 
     @staticmethod
     def diff(left, right):
+        """
+        Return the difference between two numbers.
+        If any argument is undefined or < 0, returns -1.
+        """
 
-        # Catch edge cases
-        # TODO: check if `<= 0' check makes sense
-        if not left or left <= 0 or not right or right <= 0:
+        # Catch edge cases (check that both sides "exist")
+        if not left or left < 0 or not right or right < 0:
             return -1
 
         return abs(left - right)
 
     @staticmethod
     def count_chars(obj):
-        """Determine the number of characters in a string."""
+        """
+        Determines the number of characters in a string.
+        If the argument is undefined or an empty list, returns -1.
+        """
 
-        # Catch empty post titles
-        if obj is None:
+        # Catch empty post titles (and empty lists)
+        if not obj:
             return -1
 
         # Catch non-strings (probably list / pd.Series)
         if not isinstance(obj, str):
-
-            # Catch empty lists
-            if len(obj) == 0:
-                return -1
-
             # Average the length of items in a list
             return sum(map(Util.count_chars, obj)) / len(obj)
 
@@ -76,19 +50,16 @@ class Util:
 
     @staticmethod
     def count_specific_char(obj, char):
+        """
+        Counts the number of occurrences of a specific (sub)string.
+        If any arguments are undefined, or when the (sub)string is not found, returns 0.
+        """
 
-        # Catch empty post titles
-        # TODO: check if we need to enable this here as well (is unclear from the paper)
-        # if obj is None:
-        #     return -1
+        if not char or not obj:
+            return 0
 
         # Catch non-strings (probably list / pd.Series)
         if not isinstance(obj, str):
-
-            # Catch empty lists
-            if len(obj) == 0:
-                return -1
-
             # Sum the number of occurrences in each list item
             return sum([Util.count_specific_char(item, char) for item in obj])
 
