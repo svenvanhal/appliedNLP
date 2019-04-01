@@ -137,15 +137,15 @@ class Classifiers:
             # Get optimized classifier
             clf = self._get_optimized_clf(val)
 
+            # Skip this one if it was not available
+            if clf is None:
+                continue
+
             # Split the data 80/20 in trn/tst
             trn, tst, trn_label, tst_label = train_test_split(self.data, self.labels, test_size=0.2)
 
             # Train classifier
             clf.fit(trn, trn_label)
-
-            # Skip this one if it was not available
-            if clf is None:
-                continue
 
             # Make predictions with the model
             y_preds = clf.predict(tst)
