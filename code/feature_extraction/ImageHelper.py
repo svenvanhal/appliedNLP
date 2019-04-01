@@ -25,7 +25,7 @@ class ImageHelper:
     def get_text(self, image_path):
         """
         Runs OCR on image.
-        Input format: list() with -one- element (as in the clickbait datasets).
+        Input format: iterable with -one- element (as in the clickbait datasets).
         """
 
         # Check if post has media

@@ -73,9 +73,8 @@ class FeatureExtractor:
         image_text = self.imagehelper.get_text(post_media)
 
         w_post_title = self.wordtools.get_words(post_title)
-        wu_post_title = list(set(w_post_title))
         # TODO: paper says 'set' of formal words, but wouldn't the 'list' of words make more sense?
-        wf_post_title = self.wordtools.formal_words(wu_post_title)
+        wf_post_title = self.wordtools.formal_words(w_post_title)
 
         # Calculate num characters
         nc_post_title = Util.count_chars(post_title)
