@@ -3,20 +3,32 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import chi2, mutual_info_classif
 from sklearn.model_selection import GridSearchCV, KFold, cross_validate
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
-# classifiers = [
-#     {
-#         'name': 'RandomForest',
-#         'clf': RandomForestClassifier(),
-#         'grid': {
-#             'n_estimators': [100, 1000],
-#             'max_depth': [2, 3]
-#         }
-#     },
-# ]
+"""
+Example of the classifier input:
+classifiers = [
+    {
+        'name': 'RandomForest',
+        'clf': RandomForestClassifier(),
+        // Either define grid and call .optimize(), or define optimized_param
+        'grid': {
+            'n_estimators': [100, 1000],
+            'max_depth': [2, 3]
+        },
+        optimized_param: {
+            max_depth: 3,
+            n_estimators: 100,
+        }
+    }
+]
+
+"""
 
 metrics = ['accuracy', 'precision', 'f1', 'roc_auc', 'recall']
+refit_metric = 'f1'
+classnames = ['no-clickbait', 'clickbait']
 
 
 class Classifiers:
@@ -28,9 +40,16 @@ class Classifiers:
 
         self.classifiers = classifiers
 
-    def information_gain(self):
+    def information_gain(self, data=None):
+        # Use data from class if not defined, else use the provided stuff
+        if data is None:
+            data = self.data
+            labels = self.labels
+        else:
+            labels = self.labels
+
         # Use info gain for classification as we have a binary classification problem
-        info = mutual_info_classif(self.data, self.labels, discrete_features=False)
+        info = mutual_info_classif(data, labels, discrete_features=False, random_state=42)
 
         # Create data frame with feature names and sort ascending
         combined = list(zip(self.df.columns, info))
@@ -45,13 +64,42 @@ class Classifiers:
 
         return combined
 
-    def chi2_stats(self):
-        pvals = chi2(self.data, self.labels)
+    def chi2_stats(self, data=None):
+        # Use data from class if not defined, else use the provided stuff
+        if data is None:
+            data = self.data
+            labels = self.labels
+        else:
+            labels = self.labels
+
+        pvals = chi2(data, labels)
 
         print("Chi2 stats of whole dataset")
         print(pvals)
 
         return pvals
+
+    def standard_scaling(self):
+        # Scale features to N(0,1) -> xi - mean(x) / std(x)
+        # THIS ASSUME THAT THE DATA IS NORMAL DISTRIBUTED!!
+        scaler = StandardScaler()
+        scaled_features = scaler.fit_transform(self.data, self.labels)
+
+        return scaled_features
+
+    def minmax_scaling(self):
+        # Scale features to predetermined range (0-1) -> xi - min(x) / max(x) - min(x)
+        scaler = MinMaxScaler()
+        scaled_features = scaler.fit_transform(self.data, self.labels)
+
+        return scaled_features
+
+    def robust_scaling(self):
+        # Scale just like minmax but more robust against outliers
+        scaler = RobustScaler()
+        scaled_features = scaler.fit_transform(self.data, self.labels)
+
+        return scaled_features
 
     def _get_clf_attributes(self, val):
         try:
@@ -103,8 +151,7 @@ class Classifiers:
 
             # Do a grid search with 10 folds
             optimize_cv = KFold(n_splits=10, shuffle=True)
-            # TODO: to what metric do we refit?
-            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=metrics, refit='roc_auc')
+            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=metrics, refit=refit_metric)
             clf.fit(self.data, self.labels)
             params = clf.best_params_
 
@@ -158,11 +205,20 @@ class Classifiers:
 
             # Make predictions with the model
             y_preds = clf.predict(tst)
+            y_proba = clf.predict_proba(tst)
 
-            # Óutput classification report
-            # TODO: is clickbait 0 or 1?
-            class_names = ['class 0', 'class 1']
-            report = classification_report(y_true=tst_label, y_pred=y_preds, target_names=class_names)
+
+            # Compute metrics
+            report = classification_report(y_true=tst_label, y_pred=y_preds, target_names=classnames)
+            auc = roc_auc_score(y_true=tst_label, y_score=y_preds)
+            auc_prob = roc_auc_score(y_true=tst_label, y_score=y_proba[:, 1])
+            conf = confusion_matrix(y_true=tst_label, y_pred=y_preds, labels=[0, 1])
+
+            # Output the results
             print(report)
+            print("AUC on binary labels: {}".format(auc))
+            print("AUC on probabilities: {}".format(auc_prob))
+            print("Confusion matrix:")
+            print(conf)
 
         print("-- Finished test reports --")
