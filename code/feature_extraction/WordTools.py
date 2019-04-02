@@ -18,12 +18,7 @@ class WordTools:
     puncpat = re.compile(r"[,;@#?!&$\"]+ *")
 
     def __init__(self):
-
-        # Download the WordNet corpus if not installed
-        try:
-            find('corpora/wordnet.zip')
-        except LookupError:
-            download('wordnet')
+        self.__nltk_init()
 
     def get_words(self, obj) -> set:
         """
@@ -92,3 +87,21 @@ class WordTools:
 
         # Then replace the remaining punctuation
         return self.puncpat.sub(" ", obj).lower()
+
+    def __nltk_init(self):
+        """Download and install NLTK resources if not found on the system."""
+
+        try:
+            find('corpora/wordnet.zip')
+        except LookupError:
+            download('wordnet')
+
+        try:
+            find('tokenizers/punkt/english.pickle')
+        except LookupError:
+            download('punkt')
+
+        try:
+            find('taggers/averaged_perceptron_tagger.zip')
+        except LookupError:
+            download('averaged_perceptron_tagger')
