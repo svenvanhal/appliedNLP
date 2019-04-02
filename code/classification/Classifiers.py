@@ -29,12 +29,21 @@ class Classifiers:
         self.classifiers = classifiers
 
     def information_gain(self):
-        info = mutual_info_classif(self.data, self.labels)
+        # Use info gain for classification as we have a binary classification problem
+        info = mutual_info_classif(self.data, self.labels, discrete_features=False)
+
+        # Create data frame with feature names and sort ascending
+        combined = list(zip(self.df.columns, info))
+        combined = pd.DataFrame(combined, columns=['Feature Name', 'Info Gain'])
+
+        # Sort ascending and reindex
+        combined = combined.sort_values(by=['Info Gain'], ascending=False)
+        combined.index = range(1, len(self.df.columns) + 1)
 
         print("Information gain of whole dataset")
-        print(info)
+        print(combined)
 
-        return info
+        return combined
 
     def chi2_stats(self):
         pvals = chi2(self.data, self.labels)
