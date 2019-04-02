@@ -37,7 +37,6 @@ class FeatureExtractor:
 
         # Get targets
         labels = self.__get_targets(self.df['truthClass'])
-        self.df.drop('truthClass', axis=1, inplace=True)
 
         # Get features
         features = self.df.apply(self.__get_features, axis=1)
@@ -57,12 +56,14 @@ class FeatureExtractor:
         Extracts features from dataset row.
         """
 
+        # TODO: new approach does not average the word length for arrays of text! These features are not currently used.
+
         features = pd.Series()
 
         # ------
 
         # Get relevant fields
-        post_title = row['postText']
+        post_title = row['postText'][0]
         post_media = row['postMedia']
         article_keywords = row['targetKeywords']
         article_description = row['targetDescription']
@@ -71,8 +72,12 @@ class FeatureExtractor:
 
         # Prep
         image_text = self.imagehelper.get_text(post_media)
-        w_post_title = self.wordtools.get_words(post_title)
-        wf_post_title = self.wordtools.formal_words(w_post_title)
+
+        w_post_title, wf_post_title = self.wordtools.process(post_title)
+        w_post_image, wf_post_image = self.wordtools.process(image_text)
+        w_article_keywords, wf_article_keywords = self.wordtools.process(article_keywords)
+        w_article_description, wf_article_description = self.wordtools.process(article_description)
+        w_article_title, wf_article_title = self.wordtools.process(article_title)
 
         # Calculate num characters
         nc_post_title = Util.count_chars(post_title)
@@ -84,11 +89,10 @@ class FeatureExtractor:
 
         # Calculate num words
         nw_post_title = len(w_post_title)
-        nw_post_image = self.wordtools.count_words(image_text)
-        nw_article_keywords = self.wordtools.count_words(article_keywords)
-        nw_article_description = self.wordtools.count_words(article_description)
-        nw_article_title = self.wordtools.count_words(article_title)
-        # Unused: nw_article_paragraphs = self.wordtools.count_words(article_paragraphs)
+        nw_post_image = len(w_post_image)
+        nw_article_keywords = len(w_article_keywords)
+        nw_article_description = len(w_article_description)
+        nw_article_title = len(w_article_title)
 
         # Calculate num formal words
         nwf_post_title = len(wf_post_title)

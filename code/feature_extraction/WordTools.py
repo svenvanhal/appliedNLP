@@ -1,7 +1,5 @@
 import re
 
-from itertools import chain
-
 from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords
@@ -23,35 +21,82 @@ class WordTools:
         self.lem = WordNetLemmatizer()
         self.stopwords = stopwords.words('english')
 
-    def get_word_features(self, sentence):
+    def preprocess(self, sentence):
+        # TODO: speed up this method
+
+        # Remove hashtag and at symbols
+        # TODO: check if this if too harsh, maybe switch out for a regex (but is hard!!)
+        sentence = sentence.replace("#", "")
+        sentence = sentence.replace("@", "")
+
+        # Convert unrecognized unicode apostrophes back to regular ones
+        sentence = sentence.replace("‘", "'")
+        sentence = sentence.replace("’", "'")
+
+        # Convert encoded &amp; sign back
+        sentence = sentence.replace("&amp;", "&")
+
+        return sentence
+
+    def process(self, sentence, remove_stopwords=False, digit_as_word=True):
 
         if not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
         # Convert string to tokens
-        tokens = word_tokenize(sentence)
+        tokens = word_tokenize(self.preprocess(sentence))
+
+        # Optional: remove stop words
+        if remove_stopwords:
+            tokens = self.__clear_stopwords(tokens)
 
         # Get PoS features (and map to WordNet tags)
+        # See: https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
         pos = pos_tag(tokens)
-        wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
 
-        # Lemmatize and remove stop words
-        lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos if word not in self.stopwords]
+        # Remove punctuation (PoS tag '.')
+        pos_nopunc = self.__filter_tags(pos, {'.', ':', ',', "''", '$', "``", "(", ")"})
+
+        # Optional: remove digits (PoS tag 'CD' - Cardinal Digit)
+        if not digit_as_word:
+            pos_nopunc = self.__filter_tags(pos_nopunc, {'CD'})
+
+        # Map PoS tags to WordNet tags
+        wn_pos = list(map(self.__pos_tags_to_wordnet, pos_nopunc))
+
+        # Create all words return list
+        all_words = [item[0] for item in wn_pos]
+
+        # Lemmatize
+        lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
 
         # Check lemmas in WordNet
-        formal = [lemma for lemma in lemmas if wn.synsets(lemma)]
+        formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
-        return [tokens, pos, wn_pos, lemmas, formal]
+        return [all_words, formal_words]
 
-    def __pos_tags_to_wordnet(self, tuple):
-        """Inspired by: https://stackoverflow.com/a/35465203"""
+    def __pos_tags_to_wordnet(self, word_tag):
+        """
+        Converts default NLTK PoS tags to WordNet-compatible tags.
+        Inspired by: https://stackoverflow.com/a/35465203
+        """
 
         try:
-            tag = self.morphy_tag[tuple[1][:2]]
+            tag = self.morphy_tag[word_tag[1][:2]]
         except:
             tag = wn.NOUN
 
-        return tuple[0], tag
+        return word_tag[0], tag
+
+    def __clear_stopwords(self, words):
+        """Removes stop words from the provided word list."""
+
+        return [word for word in words if word not in self.stopwords]
+
+    def __filter_tags(self, list_of_tuples, tags: set) -> list:
+        """Removes words from list of word/tag tuples if tag matches function argument."""
+
+        return [word_tag for word_tag in list_of_tuples if word_tag[1] not in tags]
 
     def __nltk_init(self):
         """Download and install NLTK resources if not found on the system."""
@@ -75,54 +120,3 @@ class WordTools:
             find('corpora/stopwords.zip')
         except LookupError:
             download('stopwords')
-
-    # ----
-
-    # Regex pattern for all relevant punctuation
-    dashpat = re.compile(r"-")
-    doubledashpat = re.compile(r"--")  # TODO: 2 or more dashes
-    puncpat = re.compile(r"[,;@#?!&$\"]+ *")
-
-    def __clean(self, obj: str) -> str:
-        """
-        Replace punctuation with a space and converts input to lowercase.
-        """
-
-        # First replace double dash with space
-        obj = self.doubledashpat.sub(" ", obj)
-
-        # Then replace single dash with nothing
-        obj = self.dashpat.sub("", obj)
-
-        # Then replace the remaining punctuation
-        return self.puncpat.sub(" ", obj).lower()
-
-    def count_words(self, obj):
-        """
-        Return the word count of a string.
-        Wrapper around len(words) to accommodate lists of words (for which the count is averaged)
-        Returns -1 for empty lists or non-existent strings. 0 for empty strings.
-        """
-
-        # Catch empty sentences (also catches empty list)
-        if not obj and obj != "":
-            return -1
-
-        # Get all (lowercased) words in string or list
-        words = self.get_words(obj)
-
-        # Average the number of words in a list
-        if not isinstance(obj, str):
-            return len(words) / len(obj)
-
-        # Return the number of words in the sentence
-        return len(words)
-
-    def formal_words(self, distinct_words) -> set:
-        """
-        Returns a set of all formal words, using WordNet via NLTK.
-        N.B.: Is case-sensitive!
-        """
-
-        # Get the set of all words which exist in the WordNet corpus
-        return set(word for word in distinct_words if wn.synsets(word))
