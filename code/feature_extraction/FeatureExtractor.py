@@ -54,48 +54,56 @@ class FeatureExtractor:
     def __get_features(self, row: pd.Series) -> pd.Series:
         """
         Extracts features from dataset row.
+        N.B.: new approach does not average the word length for arrays of text (e.g. article paragraphs)!
         """
-
-        # TODO: new approach does not average the word length for arrays of text! These features are not currently used.
 
         features = pd.Series()
 
         # ------
 
         # Get relevant fields
-        post_title = row['postText'][0]
+        post_title = row['postText'][0]  # Assumption: postText always has one item
         post_media = row['postMedia']
-        article_keywords = row['targetKeywords']
-        article_description = row['targetDescription']
+        article_kw = row['targetKeywords']
+        article_descr = row['targetDescription']
         article_title = row['targetTitle']
         article_paragraphs = row['targetParagraphs']
 
         # Prep
         image_text = self.imagehelper.get_text(post_media)
 
-        w_post_title, wf_post_title = self.wordtools.process(post_title)
-        w_post_image, wf_post_image = self.wordtools.process(image_text)
-        w_article_keywords, wf_article_keywords = self.wordtools.process(article_keywords)
-        w_article_description, wf_article_description = self.wordtools.process(article_description)
-        w_article_title, wf_article_title = self.wordtools.process(article_title)
+        # @formatter:off
+        w_post_title,    fw_post_title,    sw_post_title,    pos_post_title    = self.wordtools.process(post_title)
+        w_post_image,    fw_post_image,    sw_post_image,    pos_post_image    = self.wordtools.process(image_text)
+        w_article_kw,    fw_article_kw,    sw_article_kw,    pos_article_kw    = self.wordtools.process(article_kw)
+        w_article_descr, fw_article_descr, sw_article_descr, pos_article_descr = self.wordtools.process(article_descr)
+        w_article_title, fw_article_title, sw_article_title, pos_article_title = self.wordtools.process(article_title)
+        # @formatter:on
 
         # Calculate num characters
         nc_post_title = Util.count_chars(post_title)
         nc_post_image = Util.count_chars(image_text)
-        nc_article_keywords = Util.count_chars(article_keywords)
-        nc_article_desc = Util.count_chars(article_description)
+        nc_article_keywords = Util.count_chars(article_kw)
+        nc_article_desc = Util.count_chars(article_descr)
         nc_article_title = Util.count_chars(article_title)
         nc_article_paragraphs = Util.count_chars(article_paragraphs)
 
         # Calculate num words
         nw_post_title = len(w_post_title)
         nw_post_image = len(w_post_image)
-        nw_article_keywords = len(w_article_keywords)
-        nw_article_description = len(w_article_description)
+        nw_article_keywords = len(w_article_kw)
+        nw_article_description = len(w_article_descr)
         nw_article_title = len(w_article_title)
+        # Note: num words article paragraphs currently not supported!
 
         # Calculate num formal words
-        nwf_post_title = len(wf_post_title)
+        nfw_post_title = len(fw_post_title)
+
+        # Calculate num stop words
+        nsw_post_title = len(sw_post_title)
+
+        # Calculate PoS features
+        pos_nn_post_title = Util.count_tags(pos_post_title, {'NN'})
 
         # ------
 
@@ -118,7 +126,7 @@ class FeatureExtractor:
         features['numWords_PostTitle'] = nw_post_title
 
         # num of formal words in post title
-        features['numFormalWords_PostTitle'] = nwf_post_title
+        features['numFormalWords_PostTitle'] = nfw_post_title
 
         # num of words ratio article description \& post title
         features['ratioWords_ArticleDescPostTitle'] = Util.diff(nw_article_description, nw_post_title)
@@ -143,5 +151,13 @@ class FeatureExtractor:
 
         # num of characters ratio article paragraphs \& article desc
         features['ratioChars_ArticleParagraphsArticleDesc'] = Util.ratio(nc_article_paragraphs, nc_article_desc)
+
+        # ------
+
+        # Number of stop words in Post Title
+        features['numStopWords_PostTitle'] = nsw_post_title
+
+        # Number of "Noun, singular or mass" in Post Title
+        features['numTags_NN_PostTitle'] = pos_nn_post_title
 
         return features
