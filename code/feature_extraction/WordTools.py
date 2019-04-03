@@ -29,6 +29,7 @@ class WordTools:
 
         # Convert unrecognized unicode apostrophes back to regular ones
         sentence = sentence.replace("‘", "'").replace("’", "'")
+        sentence = sentence.replace("“", '"').replace("”", '"')
 
         # Convert encoded &amp; sign back
         sentence = sentence.replace("&amp;", "&")
