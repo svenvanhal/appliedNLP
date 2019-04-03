@@ -27,7 +27,7 @@ classifiers = [
 """
 
 metrics = ['accuracy', 'precision', 'f1', 'roc_auc', 'recall']
-refit_metric = 'f1'
+optimize_metric = 'f1'
 classnames = ['no-clickbait', 'clickbait']
 
 
@@ -132,7 +132,7 @@ class Classifiers:
             params = val['optimized_param']
             clf = classifier.set_params(**params)
 
-        return clf
+        return clf, name
 
     def optimize(self):
         print("-- Start optimizing by grid search --")
@@ -151,7 +151,7 @@ class Classifiers:
 
             # Do a grid search with 10 folds
             optimize_cv = KFold(n_splits=10, shuffle=True)
-            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=metrics, refit=refit_metric)
+            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=optimize_metric, n_jobs=-2)
             clf.fit(self.data, self.labels)
             params = clf.best_params_
 
@@ -168,7 +168,7 @@ class Classifiers:
         print("-- Cross validation with 10-folds --")
         for _, val in enumerate(self.classifiers):
             # Get optimized classifier
-            clf = self._get_optimized_clf(val)
+            clf, name = self._get_optimized_clf(val)
 
             # Skip this one if it was not available
             if clf is None:
@@ -176,29 +176,65 @@ class Classifiers:
 
             # Now check performance of the classifier with cross validation
             test_cv = KFold(n_splits=10, shuffle=True)
-            performance = cross_validate(estimator=clf, X=self.data, y=self.labels, scoring=metrics, cv=test_cv)
+            performance = cross_validate(estimator=clf, X=self.data, y=self.labels, scoring=metrics, cv=test_cv,
+                                         n_jobs=-2)
 
-            # Average each metric over the folds
-            for k, scores in performance.items():
-                performance[k] = scores.mean()
-
-            print("Cross validation performance:")
-            print(performance)
+            print("Cross validation performance {}:".format(name))
+            self.__cv_report(performance)
 
         print("-- Finished cross validation --")
 
+    def __split_cv_results(self, results):
+        train = dict()
+        test = dict()
+
+        # Average metrics and split
+        for k, v in results.items():
+            if 'train' in k:
+                train[k] = v.mean()
+            if 'test' in k:
+                test[k] = v.mean()
+
+        return train, test
+
+    def __cv_report(self, results):
+        train, test = self.__split_cv_results(results)
+
+        tr = pd.Series(data=train)
+        tst = pd.Series(data=test)
+
+        print("TRAIN")
+        print(tr.to_string())
+        print("\nTEST")
+        print(tst.to_string())
+        print("\n")
+
+    def __test_report(self, y_true, y_preds, y_probs):
+        # Compute metrics
+        report = classification_report(y_true=y_true, y_pred=y_preds, target_names=classnames)
+        auc = roc_auc_score(y_true=y_true, y_score=y_preds)
+        auc_prob = roc_auc_score(y_true=y_true, y_score=y_probs[:, 1])
+        conf = confusion_matrix(y_true=y_true, y_pred=y_preds, labels=[0, 1])
+
+        print(report)
+        print("AUC on binary labels: {}".format(auc))
+        print("AUC on probabilities: {}".format(auc_prob))
+        print("Confusion matrix:")
+        print(conf)
+        print("\n")
+
     def test(self):
-        print("-- Performance on split: 80% train - 20% split --")
+        print("-- Performance on split: 70% train - 30% split --")
         for _, val in enumerate(self.classifiers):
             # Get optimized classifier
-            clf = self._get_optimized_clf(val)
+            clf, name = self._get_optimized_clf(val)
 
             # Skip this one if it was not available
             if clf is None:
                 continue
 
-            # Split the data 80/20 in trn/tst
-            trn, tst, trn_label, tst_label = train_test_split(self.data, self.labels, test_size=0.2)
+            # Split the data 80/30 in trn/tst
+            trn, tst, trn_label, tst_label = train_test_split(self.data, self.labels, test_size=0.3, shuffle=True)
 
             # Train classifier
             clf.fit(trn, trn_label)
@@ -207,18 +243,8 @@ class Classifiers:
             y_preds = clf.predict(tst)
             y_proba = clf.predict_proba(tst)
 
-
-            # Compute metrics
-            report = classification_report(y_true=tst_label, y_pred=y_preds, target_names=classnames)
-            auc = roc_auc_score(y_true=tst_label, y_score=y_preds)
-            auc_prob = roc_auc_score(y_true=tst_label, y_score=y_proba[:, 1])
-            conf = confusion_matrix(y_true=tst_label, y_pred=y_preds, labels=[0, 1])
-
             # Output the results
-            print(report)
-            print("AUC on binary labels: {}".format(auc))
-            print("AUC on probabilities: {}".format(auc_prob))
-            print("Confusion matrix:")
-            print(conf)
+            print("Test performance: {}".format(name))
+            self.__test_report(tst_label, y_preds, y_proba)
 
         print("-- Finished test reports --")
