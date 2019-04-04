@@ -4,7 +4,6 @@ from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
 
-
 WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos', 'bigrams', 'trigrams'])
 
 
@@ -120,12 +119,10 @@ class WordTools:
 
         return [word_tag for word_tag in list_of_tuples if word_tag[1] not in tags]
 
-    def __get_ngrams(self, list_of_tuples, n1, n2):
+    def __get_ngrams(self, words, n1, n2):
 
-        words = {pos_tuple[0] for pos_tuple in list_of_tuples}
-
-        n1gram = ngrams(words, n1)
-        n2gram = ngrams(words, n2)
+        n1gram = list(ngrams(words, n1))
+        n2gram = list(ngrams(words, n2))
 
         return n1gram, n2gram
 
