@@ -80,7 +80,7 @@ class FeatureExtractor:
         proc_article_kw = self.wordtools.process(article_kw)
         proc_article_desc = self.wordtools.process(article_desc)
         proc_article_title = self.wordtools.process(article_title)
-        proc_article_par = self.wordtools.process(article_par)
+        proc_article_par = self.wordtools.process_list(article_par)
 
         # Calculate num characters
         num_chars = OrderedDict()

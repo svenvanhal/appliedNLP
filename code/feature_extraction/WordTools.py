@@ -50,7 +50,7 @@ class WordTools:
         """
 
         if not isinstance(sentence, str):
-            return self.process_list(sentence, remove_digits, remove_stopwords)
+            raise ValueError("Word features can only be extracted from a single string.")
 
         # Convert string to tokens
         tokens = word_tokenize(self.preprocess(sentence))
