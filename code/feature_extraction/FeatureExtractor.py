@@ -57,6 +57,8 @@ class FeatureExtractor:
     def __get_features(self, row: pd.Series) -> pd.Series:
         """
         Extracts features from dataset row.
+
+        TODO: check if it makes sense to calculate the average keyword length as opposed to the total word length: says so in the paper, but seems strange
         """
 
         features = pd.Series()
@@ -100,30 +102,30 @@ class FeatureExtractor:
 
         # Calculate num words
         num_words = OrderedDict()
-        num_words['post_title'] = len(proc_post_title.words)
-        num_words['post_image'] = len(proc_post_image.words)
-        num_words['article_kw'] = len(proc_article_kw.words)
-        num_words['article_desc'] = len(proc_article_desc.words)
-        num_words['article_title'] = len(proc_article_title.words)
-        num_words['article_par'] = len(proc_article_par.words)
+        num_words['post_title'] = Util.count_words(proc_post_title.words)
+        num_words['post_image'] = Util.count_words(proc_post_image.words)
+        num_words['article_kw'] = Util.count_words(proc_article_kw.words)
+        num_words['article_desc'] = Util.count_words(proc_article_desc.words)
+        num_words['article_title'] = Util.count_words(proc_article_title.words)
+        num_words['article_par'] = Util.count_words(proc_article_par.words)
 
         # Calculate num formal words
         num_formal_words = OrderedDict()
-        num_formal_words['post_title'] = len(proc_post_title.formal_words)
-        num_formal_words['post_image'] = len(proc_post_image.formal_words)
-        num_formal_words['article_kw'] = len(proc_article_kw.formal_words)
-        num_formal_words['article_desc'] = len(proc_article_desc.formal_words)
-        num_formal_words['article_title'] = len(proc_article_title.formal_words)
-        num_formal_words['article_par'] = len(proc_article_par.formal_words)
+        num_formal_words['post_title'] = Util.count_words(proc_post_title.formal_words)
+        num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
+        num_formal_words['article_kw'] = Util.count_words(proc_article_kw.formal_words)
+        num_formal_words['article_desc'] = Util.count_words(proc_article_desc.formal_words)
+        num_formal_words['article_title'] = Util.count_words(proc_article_title.formal_words)
+        num_formal_words['article_par'] = Util.count_words(proc_article_par.formal_words)
 
         # Calculate num stop words
         num_stopwords = OrderedDict()
-        num_stopwords['post_title'] = len(proc_post_title.stopwords)
-        num_stopwords['post_image'] = len(proc_post_image.stopwords)
-        num_stopwords['article_kw'] = len(proc_article_kw.stopwords)
-        num_stopwords['article_desc'] = len(proc_article_desc.stopwords)
-        num_stopwords['article_title'] = len(proc_article_title.stopwords)
-        num_stopwords['article_par'] = len(proc_article_par.stopwords)
+        num_stopwords['post_title'] = Util.count_words(proc_post_title.stopwords)
+        num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
+        num_stopwords['article_kw'] = Util.count_words(proc_article_kw.stopwords)
+        num_stopwords['article_desc'] = Util.count_words(proc_article_desc.stopwords)
+        num_stopwords['article_title'] = Util.count_words(proc_article_title.stopwords)
+        num_stopwords['article_par'] = Util.count_words(proc_article_par.stopwords)
 
         # Calculate PoS features
         # pos_nn_post_title = Util.count_tags(proc_post_title.pos, {'NN'})

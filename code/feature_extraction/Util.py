@@ -34,7 +34,7 @@ class Util:
         """
 
         # Catch empty post titles (and empty lists)
-        if not obj and obj != "":
+        if not obj:
             return -1
 
         # Catch non-strings (probably list / pd.Series)
@@ -66,7 +66,37 @@ class Util:
         return obj.count(char)
 
     @staticmethod
+    def count_words(obj):
+        """
+        Determines the number of words in a string.
+        If the argument is undefined or an empty list, returns -1.
+        """
+
+        # Catch empty post titles (and empty lists)
+        if not obj:
+            return -1
+
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+            # Average the length of items in a list
+            return sum(map(Util.count_words, obj)) / len(obj)
+
+        # Return string length
+        return len(obj)
+
+    @staticmethod
     def count_tags(obj, tags: set) -> int:
-        """Removes words from list of word/tag tuples if tag matches function argument."""
+        """
+        Counts the number of words with a tag in the provided tag set.
+        """
+
+        # Catch empty post titles (and empty lists)
+        if not obj:
+            return -1
+
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+            # Average the number of tags
+            return sum(map(Util.count_words, obj)) / len(obj)
 
         return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
