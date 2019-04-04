@@ -1,8 +1,11 @@
-import re
+from collections import namedtuple
 
-from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer
+from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
+
+
+WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos', 'bigrams', 'trigrams'])
 
 
 class WordTools:
@@ -66,15 +69,17 @@ class WordTools:
         # Split words and stop words, optionally remove from original word list
         pos, stopwords = self.__split_stopwords(pos, remove_stopwords)
 
+        # Get just the words from the PoS word/tag tuples
+        all_words = [item[0] for item in pos]
+
+        bigrams, trigrams = self.__get_ngrams(all_words, 2, 3)
+
         # Map PoS tags to WordNet tags, lemmatize and find lemmas in WordNet
         wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
         lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
         formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
-        # Get just the words from the PoS word/tag tuples
-        all_words = [item[0] for item in pos]
-
-        return all_words, formal_words, stopwords, pos
+        return WTReturn(all_words, formal_words, stopwords, pos, bigrams, trigrams)
 
     def __pos_tags_to_wordnet(self, word_tag):
         """
@@ -114,6 +119,15 @@ class WordTools:
         """Removes words from list of word/tag tuples if tag matches function argument."""
 
         return [word_tag for word_tag in list_of_tuples if word_tag[1] not in tags]
+
+    def __get_ngrams(self, list_of_tuples, n1, n2):
+
+        words = {pos_tuple[0] for pos_tuple in list_of_tuples}
+
+        n1gram = ngrams(words, n1)
+        n2gram = ngrams(words, n2)
+
+        return n1gram, n2gram
 
     def __nltk_init(self):
         """Download and install NLTK resources if not found on the system."""

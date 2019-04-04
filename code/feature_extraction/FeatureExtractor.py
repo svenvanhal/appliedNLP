@@ -1,3 +1,6 @@
+from collections import OrderedDict
+from itertools import combinations
+
 import pandas as pd
 
 from .WordTools import WordTools
@@ -54,7 +57,6 @@ class FeatureExtractor:
     def __get_features(self, row: pd.Series) -> pd.Series:
         """
         Extracts features from dataset row.
-        N.B.: new approach does not average the word length for arrays of text (e.g. article paragraphs)!
         """
 
         features = pd.Series()
@@ -65,196 +67,101 @@ class FeatureExtractor:
         post_title = row['postText'][0]  # Assumption: postText always has one item
         post_media = row['postMedia']
         article_kw = row['targetKeywords']
-        article_descr = row['targetDescription']
+        article_desc = row['targetDescription']
         article_title = row['targetTitle']
-        article_paragraphs = row['targetParagraphs']
+        article_par = row['targetParagraphs']
 
         # Prep
         post_image = self.imagehelper.get_text(post_media)
-
-        # @formatter:off
-        w_post_title,    fw_post_title,    sw_post_title,    pos_post_title    = self.wordtools.process(post_title)
-        w_post_image,    fw_post_image,    sw_post_image,    pos_post_image    = self.wordtools.process(post_image)
-        w_article_kw,    fw_article_kw,    sw_article_kw,    pos_article_kw    = self.wordtools.process(article_kw)
-        w_article_descr, fw_article_descr, sw_article_descr, pos_article_descr = self.wordtools.process(article_descr)
-        w_article_title, fw_article_title, sw_article_title, pos_article_title = self.wordtools.process(article_title)
+        proc_post_title = self.wordtools.process(post_title)
+        proc_post_image = self.wordtools.process(post_image)
+        proc_article_kw = self.wordtools.process(article_kw)
+        proc_article_desc = self.wordtools.process(article_desc)
+        proc_article_title = self.wordtools.process(article_title)
+        proc_article_par = self.wordtools.process(article_par)
 
         # Calculate num characters
-        nc_post_title         = Util.count_chars(post_title)
-        nc_post_image         = Util.count_chars(post_image)
-        nc_article_kw   = Util.count_chars(article_kw)
-        nc_article_descr      = Util.count_chars(article_descr)
-        nc_article_title      = Util.count_chars(article_title)
-        nc_article_paragraphs = Util.count_chars(article_paragraphs)
+        num_chars = OrderedDict()
+        num_chars['post_title'] = Util.count_chars(post_title)
+        num_chars['post_image'] = Util.count_chars(post_image)
+        num_chars['article_kw'] = Util.count_chars(article_kw)
+        num_chars['article_desc'] = Util.count_chars(article_desc)
+        num_chars['article_title'] = Util.count_chars(article_title)
+        num_chars['article_par'] = Util.count_chars(article_par)
+
+        # Calculate num question marks
+        num_qmarks = OrderedDict()
+        num_qmarks['post_title'] = Util.count_specific_char(post_title, '?')
+        num_qmarks['post_image'] = Util.count_specific_char(post_image, '?')
+        num_qmarks['article_keywords'] = Util.count_specific_char(article_kw, '?')
+        num_qmarks['article_desc'] = Util.count_specific_char(article_desc, '?')
+        num_qmarks['article_title'] = Util.count_specific_char(article_title, '?')
+        num_qmarks['article_par'] = Util.count_specific_char(article_par, '?')
 
         # Calculate num words
-        nw_post_title    = len(w_post_title)
-        nw_post_image    = len(w_post_image)
-        nw_article_kw    = len(w_article_kw)
-        nw_article_descr = len(w_article_descr)
-        nw_article_title = len(w_article_title)
-        # Note: num words article paragraphs currently not supported!
+        num_words = OrderedDict()
+        num_words['post_title'] = len(proc_post_title.words)
+        num_words['post_image'] = len(proc_post_image.words)
+        num_words['article_kw'] = len(proc_article_kw.words)
+        num_words['article_desc'] = len(proc_article_desc.words)
+        num_words['article_title'] = len(proc_article_title.words)
+        num_words['article_par'] = len(proc_article_par.words)
 
         # Calculate num formal words
-        nfw_post_title    = len(fw_post_title)
-        nfw_post_image    = len(fw_post_image)
-        nfw_article_kw    = len(fw_article_kw)
-        nfw_article_descr = len(fw_article_descr)
-        nfw_article_title = len(fw_article_title)
+        num_formal_words = OrderedDict()
+        num_formal_words['post_title'] = len(proc_post_title.formal_words)
+        num_formal_words['post_image'] = len(proc_post_image.formal_words)
+        num_formal_words['article_kw'] = len(proc_article_kw.formal_words)
+        num_formal_words['article_desc'] = len(proc_article_desc.formal_words)
+        num_formal_words['article_title'] = len(proc_article_title.formal_words)
+        num_formal_words['article_par'] = len(proc_article_par.formal_words)
 
         # Calculate num stop words
-        nsw_post_title    = len(sw_post_title)
-        nsw_post_image    = len(sw_post_image)
-        nsw_article_kw    = len(sw_article_kw)
-        nsw_article_descr = len(sw_article_descr)
-        nsw_article_title = len(sw_article_title)
+        num_stopwords = OrderedDict()
+        num_stopwords['post_title'] = len(proc_post_title.stopwords)
+        num_stopwords['post_image'] = len(proc_post_image.stopwords)
+        num_stopwords['article_kw'] = len(proc_article_kw.stopwords)
+        num_stopwords['article_desc'] = len(proc_article_desc.stopwords)
+        num_stopwords['article_title'] = len(proc_article_title.stopwords)
+        num_stopwords['article_par'] = len(proc_article_par.stopwords)
 
         # Calculate PoS features
-        pos_nn_post_title = Util.count_tags(pos_post_title, {'NN'})
-
-        # ------
-        # TODO: remove amount of "duplicate" code here
-
-        # Number of characters
-        features['numChars_post_title']         = nc_post_title
-        features['numChars_post_image']         = nc_post_image
-        features['numChars_article_keywords']   = nc_article_kw
-        features['numChars_article_desc']       = nc_article_descr
-        features['numChars_article_title']      = nc_article_title
-        features['numChars_article_paragraphs'] = nc_article_paragraphs
-
-        # Number of words
-        features['numWords_post_title']       = nw_post_title
-        features['numWords_post_image']       = nw_post_image
-        features['numWords_article_keywords'] = nw_article_kw
-        features['numWords_article_desc']     = nw_article_descr
-        features['numWords_article_title']    = nw_article_title
-        # features['numWords_article_paragraphs'] = nw_article_paragraphs
-
-        # Number of formal words
-        features['numFormalWords_post_title']    = nfw_post_title
-        features['numFormalWords_post_image']    = nfw_post_image
-        features['numFormalWords_article_kw']    = nfw_article_kw
-        features['numFormalWords_article_descr'] = nfw_article_descr
-        features['numFormalWords_article_title'] = nfw_article_title
-        # features['numFormalWords_article_paragraphs'] = nfw_article_paragraphs
-
-        # Number of stop words
-        features['numStopWords_post_title']    = nsw_post_title
-        features['numStopWords_post_image']    = nsw_post_image
-        features['numStopWords_article_kw']    = nsw_article_kw
-        features['numStopWords_article_descr'] = nsw_article_descr
-        features['numStopWords_article_title'] = nsw_article_title
-        # features['numFormalWords_article_paragraphs'] = nfw_article_paragraphs
-
-        # Number of question marks
-        features['numQuestionMarks_post_title']         = Util.count_specific_char(post_title, '?')
-        features['numQuestionMarks_post_image']         = Util.count_specific_char(post_image, '?')
-        features['numQuestionMarks_article_keywords']   = Util.count_specific_char(article_kw, '?')
-        features['numQuestionMarks_article_desc']       = Util.count_specific_char(article_descr, '?')
-        features['numQuestionMarks_article_title']      = Util.count_specific_char(article_title, '?')
-        features['numQuestionMarks_article_paragraphs'] = Util.count_specific_char(article_paragraphs, '?')
+        # pos_nn_post_title = Util.count_tags(proc_post_title.pos, {'NN'})
 
         # ------
 
-        # Ratio between number of characters
-        features['ratioChars_post_title_post_image']          = Util.ratio(nc_post_title, nc_post_image)
-        features['ratioChars_post_title_article_keywords']    = Util.ratio(nc_post_title, nc_article_kw)
-        features['ratioChars_post_title_article_descr']       = Util.ratio(nc_post_title, nc_article_descr)
-        features['ratioChars_post_title_article_title']       = Util.ratio(nc_post_title, nc_article_title)
-        features['ratioChars_post_image_article_keywords']    = Util.ratio(nc_post_image, nc_article_kw)
-        features['ratioChars_post_image_article_descr']       = Util.ratio(nc_post_image, nc_article_descr)
-        features['ratioChars_post_image_article_title']       = Util.ratio(nc_post_image, nc_article_title)
-        features['ratioChars_article_keywords_article_descr'] = Util.ratio(nc_article_kw, nc_article_descr)
-        features['ratioChars_article_keywords_article_title'] = Util.ratio(nc_article_kw, nc_article_title)
-        features['ratioChars_article_descr_article_title']    = Util.ratio(nc_article_descr, nc_article_title)
+        def dict2feature(name: str, data: dict) -> None:
+            """Append feature name to dict key and append to features."""
 
-        # Ratio between number of words
-        features['ratioWords_post_title_post_image']          = Util.ratio(nw_post_title, nw_post_image)
-        features['ratioWords_post_title_article_keywords']    = Util.ratio(nw_post_title, nw_article_kw)
-        features['ratioWords_post_title_article_descr']       = Util.ratio(nw_post_title, nw_article_descr)
-        features['ratioWords_post_title_article_title']       = Util.ratio(nw_post_title, nw_article_title)
-        features['ratioWords_post_image_article_keywords']    = Util.ratio(nw_post_image, nw_article_kw)
-        features['ratioWords_post_image_article_descr']       = Util.ratio(nw_post_image, nw_article_descr)
-        features['ratioWords_post_image_article_title']       = Util.ratio(nw_post_image, nw_article_title)
-        features['ratioWords_article_keywords_article_descr'] = Util.ratio(nw_article_kw, nw_article_descr)
-        features['ratioWords_article_keywords_article_title'] = Util.ratio(nw_article_kw, nw_article_title)
-        features['ratioWords_article_descr_article_title']    = Util.ratio(nw_article_descr, nw_article_title)
+            for k, v in data.items():
+                features["{}_{}".format(name, k)] = v
 
-        # Ratio between number of formal words
-        features['ratioFormalWords_post_title_post_image']          = Util.ratio(nfw_post_title, nfw_post_image)
-        features['ratioFormalWords_post_title_article_keywords']    = Util.ratio(nfw_post_title, nfw_article_kw)
-        features['ratioFormalWords_post_title_article_descr']       = Util.ratio(nfw_post_title, nfw_article_descr)
-        features['ratioFormalWords_post_title_article_title']       = Util.ratio(nfw_post_title, nfw_article_title)
-        features['ratioFormalWords_post_image_article_keywords']    = Util.ratio(nfw_post_image, nfw_article_kw)
-        features['ratioFormalWords_post_image_article_descr']       = Util.ratio(nfw_post_image, nfw_article_descr)
-        features['ratioFormalWords_post_image_article_title']       = Util.ratio(nfw_post_image, nfw_article_title)
-        features['ratioFormalWords_article_keywords_article_descr'] = Util.ratio(nfw_article_kw, nfw_article_descr)
-        features['ratioFormalWords_article_keywords_article_title'] = Util.ratio(nfw_article_kw, nfw_article_title)
-        features['ratioFormalWords_article_descr_article_title']    = Util.ratio(nfw_article_descr, nfw_article_title)
+        def combi_dict2feature(name: str, data: dict, func) -> None:
+            """More efficiently calculate features for all combinations."""
 
-        # Ratio between number of stop words
-        features['ratioStopWords_post_title_post_image']          = Util.ratio(nsw_post_title, nfw_post_image)
-        features['ratioStopWords_post_title_article_keywords']    = Util.ratio(nsw_post_title, nfw_article_kw)
-        features['ratioStopWords_post_title_article_descr']       = Util.ratio(nsw_post_title, nfw_article_descr)
-        features['ratioStopWords_post_title_article_title']       = Util.ratio(nsw_post_title, nfw_article_title)
-        features['ratioStopWords_post_image_article_keywords']    = Util.ratio(nsw_post_image, nfw_article_kw)
-        features['ratioStopWords_post_image_article_descr']       = Util.ratio(nsw_post_image, nfw_article_descr)
-        features['ratioStopWords_post_image_article_title']       = Util.ratio(nsw_post_image, nfw_article_title)
-        features['ratioStopWords_article_keywords_article_descr'] = Util.ratio(nsw_article_kw, nfw_article_descr)
-        features['ratioStopWords_article_keywords_article_title'] = Util.ratio(nsw_article_kw, nfw_article_title)
-        features['ratioStopWords_article_descr_article_title']    = Util.ratio(nsw_article_descr, nfw_article_title)
+            for var1, var2 in combinations(data, 2):
+                features["{}_{}_{}".format(name, var1, var2)] = func(data[var1], data[var2])
 
         # ------
 
-        # Diff between number of characters
-        features['diffChars_post_title_post_image']          = Util.diff(nc_post_title, nc_post_image)
-        features['diffChars_post_title_article_keywords']    = Util.diff(nc_post_title, nc_article_kw)
-        features['diffChars_post_title_article_descr']       = Util.diff(nc_post_title, nc_article_descr)
-        features['diffChars_post_title_article_title']       = Util.diff(nc_post_title, nc_article_title)
-        features['diffChars_post_image_article_keywords']    = Util.diff(nc_post_image, nc_article_kw)
-        features['diffChars_post_image_article_descr']       = Util.diff(nc_post_image, nc_article_descr)
-        features['diffChars_post_image_article_title']       = Util.diff(nc_post_image, nc_article_title)
-        features['diffChars_article_keywords_article_descr'] = Util.diff(nc_article_kw, nc_article_descr)
-        features['diffChars_article_keywords_article_title'] = Util.diff(nc_article_kw, nc_article_title)
-        features['diffChars_article_descr_article_title']    = Util.diff(nc_article_descr, nc_article_title)
+        # Number of ...
+        dict2feature('numChars', num_chars)
+        dict2feature('numWords', num_words)
+        dict2feature('numFormalWords', num_formal_words)
+        dict2feature('numStopWords', num_stopwords)
+        dict2feature('numQuestionMarks', num_qmarks)
 
-        # Diff between number of words
-        features['diffWords_post_title_post_image']          = Util.diff(nw_post_title, nw_post_image)
-        features['diffWords_post_title_article_keywords']    = Util.diff(nw_post_title, nw_article_kw)
-        features['diffWords_post_title_article_descr']       = Util.diff(nw_post_title, nw_article_descr)
-        features['diffWords_post_title_article_title']       = Util.diff(nw_post_title, nw_article_title)
-        features['diffWords_post_image_article_keywords']    = Util.diff(nw_post_image, nw_article_kw)
-        features['diffWords_post_image_article_descr']       = Util.diff(nw_post_image, nw_article_descr)
-        features['diffWords_post_image_article_title']       = Util.diff(nw_post_image, nw_article_title)
-        features['diffWords_article_keywords_article_descr'] = Util.diff(nw_article_kw, nw_article_descr)
-        features['diffWords_article_keywords_article_title'] = Util.diff(nw_article_kw, nw_article_title)
-        features['diffWords_article_descr_article_title']    = Util.diff(nw_article_descr, nw_article_title)
+        # Ratio's
+        combi_dict2feature('ratioChars', num_chars, Util.ratio)
+        combi_dict2feature('ratioWords', num_words, Util.ratio)
+        combi_dict2feature('ratioFormalWords', num_formal_words, Util.ratio)
+        combi_dict2feature('ratioStopWords', num_stopwords, Util.ratio)
 
-        # Diff between number of formal words
-        features['diffFormalWords_post_title_post_image']          = Util.diff(nfw_post_title, nfw_post_image)
-        features['diffFormalWords_post_title_article_keywords']    = Util.diff(nfw_post_title, nfw_article_kw)
-        features['diffFormalWords_post_title_article_descr']       = Util.diff(nfw_post_title, nfw_article_descr)
-        features['diffFormalWords_post_title_article_title']       = Util.diff(nfw_post_title, nfw_article_title)
-        features['diffFormalWords_post_image_article_keywords']    = Util.diff(nfw_post_image, nfw_article_kw)
-        features['diffFormalWords_post_image_article_descr']       = Util.diff(nfw_post_image, nfw_article_descr)
-        features['diffFormalWords_post_image_article_title']       = Util.diff(nfw_post_image, nfw_article_title)
-        features['diffFormalWords_article_keywords_article_descr'] = Util.diff(nfw_article_kw, nfw_article_descr)
-        features['diffFormalWords_article_keywords_article_title'] = Util.diff(nfw_article_kw, nfw_article_title)
-        features['diffFormalWords_article_descr_article_title']    = Util.diff(nfw_article_descr, nfw_article_title)
-
-        # Diff between number of stop words
-        features['diffStopWords_post_title_post_image']          = Util.diff(nsw_post_title, nfw_post_image)
-        features['diffStopWords_post_title_article_keywords']    = Util.diff(nsw_post_title, nfw_article_kw)
-        features['diffStopWords_post_title_article_descr']       = Util.diff(nsw_post_title, nfw_article_descr)
-        features['diffStopWords_post_title_article_title']       = Util.diff(nsw_post_title, nfw_article_title)
-        features['diffStopWords_post_image_article_keywords']    = Util.diff(nsw_post_image, nfw_article_kw)
-        features['diffStopWords_post_image_article_descr']       = Util.diff(nsw_post_image, nfw_article_descr)
-        features['diffStopWords_post_image_article_title']       = Util.diff(nsw_post_image, nfw_article_title)
-        features['diffStopWords_article_keywords_article_descr'] = Util.diff(nsw_article_kw, nfw_article_descr)
-        features['diffStopWords_article_keywords_article_title'] = Util.diff(nsw_article_kw, nfw_article_title)
-        features['diffStopWords_article_descr_article_title']    = Util.diff(nsw_article_descr, nfw_article_title)
-        # @formatter:on
+        # Differences
+        combi_dict2feature('diffChars', num_chars, Util.diff)
+        combi_dict2feature('diffWords', num_words, Util.diff)
+        combi_dict2feature('diffFormalWords', num_formal_words, Util.diff)
+        combi_dict2feature('diffStopWords', num_stopwords, Util.diff)
 
         # Number of "Noun, singular or mass" in Post Title
         # TODO: enable later
