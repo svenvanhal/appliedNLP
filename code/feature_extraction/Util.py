@@ -64,3 +64,9 @@ class Util:
             return sum([Util.count_specific_char(item, char) for item in obj])
 
         return obj.count(char)
+
+    @staticmethod
+    def count_tags(obj, tags: set) -> int:
+        """Removes words from list of word/tag tuples if tag matches function argument."""
+
+        return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
