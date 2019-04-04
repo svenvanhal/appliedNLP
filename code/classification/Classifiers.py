@@ -27,7 +27,6 @@ classifiers = [
 """
 
 metrics = ['accuracy', 'precision', 'f1', 'roc_auc', 'recall']
-optimize_metric = 'f1'
 classnames = ['no-clickbait', 'clickbait']
 
 
@@ -134,7 +133,7 @@ class Classifiers:
 
         return clf, name
 
-    def optimize(self):
+    def optimize(self, metric='f1'):
         print("-- Start optimizing by grid search --")
         for _, val in enumerate(self.classifiers):
             # Make sure that the classifier is defined
@@ -151,7 +150,7 @@ class Classifiers:
 
             # Do a grid search with 10 folds
             optimize_cv = KFold(n_splits=10, shuffle=True)
-            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=optimize_metric, n_jobs=-2)
+            clf = GridSearchCV(estimator=clf, param_grid=grid, cv=optimize_cv, scoring=metric, n_jobs=-2)
             clf.fit(self.data, self.labels)
             params = clf.best_params_
 
