@@ -48,7 +48,7 @@ class Classifiers:
             labels = self.labels
 
         # Use info gain for classification as we have a binary classification problem
-        info = mutual_info_classif(data, labels, discrete_features=False, random_state=42)
+        info = mutual_info_classif(data, labels, discrete_features=False)
 
         # Create data frame with feature names and sort ascending
         combined = list(zip(self.df.columns, info))
@@ -58,10 +58,26 @@ class Classifiers:
         combined = combined.sort_values(by=['Info Gain'], ascending=False)
         combined.index = range(1, len(self.df.columns) + 1)
 
-        print("Information gain of whole dataset")
-        print(combined)
+        # print("Information gain of whole dataset")
+        # print(combined)
 
         return combined
+
+    def repeat_info_gain(self, data, repeats):
+        result_df = pd.DataFrame()
+        for i in range(repeats):
+            if i == 0:
+                result_df = self.information_gain(data)
+            else:
+                result_df = pd.merge(result_df, self.information_gain(data), on='Feature Name')
+
+        # Compute mean and sort
+        result_df['Mean'] = result_df.mean(axis=1)
+
+        result_df = result_df.sort_values(by=['Mean'], ascending=False)
+        result_df.index = range(1, len(self.df.columns) + 1)
+
+        return result_df
 
     def chi2_stats(self, data=None):
         # Use data from class if not defined, else use the provided stuff
