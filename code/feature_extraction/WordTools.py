@@ -3,6 +3,7 @@ from collections import namedtuple
 from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
+from nltk.tag import StanfordNERTagger
 
 WTReturn = namedtuple('WTReturn',
                       ['words', 'formal_words', 'stopwords', 'pos', 'word_bigrams', 'word_trigrams', 'pos_bigrams',
@@ -18,13 +19,15 @@ class WordTools:
     morphy_tag = {'NN': wn.NOUN, 'JJ': wn.ADJ,
                   'VB': wn.VERB, 'RB': wn.ADV}
 
-    def __init__(self):
+    def __init__(self, st_model=None, st_jar=None):
 
         # Download required NLTK libraries
         self.__nltk_init()
 
         self.lem = WordNetLemmatizer()
         self.stopwords = sw.words('english')
+
+        self.st = StanfordNERTagger(st_model, st_jar)
 
     def preprocess(self, sentence):
 
@@ -49,10 +52,13 @@ class WordTools:
         if not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
-        # Convert string to tokens
-        tokens = word_tokenize(self.preprocess(sentence))
+        # Convert string to tokens and recognize named entities
+        tokens = self.st.tag(word_tokenize(self.preprocess(sentence)))
 
-        # Get PoS tags (and map to WordNet tags)
+        # Lowercase tokens except for NE
+        tokens = [WordTools.convert_ner_case(token) for token in tokens]
+
+        # Get PoS tags
         # See: https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
         pos_raw = pos_tag(tokens)
 
@@ -157,3 +163,7 @@ class WordTools:
             find('corpora/stopwords.zip')
         except LookupError:
             download('stopwords')
+
+    @staticmethod
+    def convert_ner_case(tagged):
+        return tagged[0].lower() if tagged[1] == 'O' else tagged[0].title()
