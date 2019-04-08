@@ -4,7 +4,9 @@ from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
 
-WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos', 'bigrams', 'trigrams'])
+WTReturn = namedtuple('WTReturn',
+                      ['words', 'formal_words', 'stopwords', 'pos', 'word_bigrams', 'word_trigrams', 'pos_bigrams',
+                       'pos_trigrams'])
 rng_WTReturn = range(0, len(WTReturn._fields))
 
 
@@ -26,16 +28,11 @@ class WordTools:
 
     def preprocess(self, sentence):
 
-        # Remove hashtag and at symbols
-        # TODO: check if this if too harsh, maybe switch out for a regex (but is hard!!)
-        sentence = sentence.replace("#", "").replace("@", "")
-
         # Convert unrecognized unicode apostrophes back to regular ones
-        sentence = sentence.replace("‘", "'").replace("’", "'")
-        sentence = sentence.replace("“", '"').replace("”", '"')
+        sentence = sentence.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
 
-        # Convert encoded &amp; sign back
-        sentence = sentence.replace("&amp;", "&")
+        # Remove @ and # symbols (which are treated as single words by the NLTK tokenizer)
+        sentence = sentence.replace("@", "").replace("#", "")
 
         return sentence
 
@@ -71,16 +68,20 @@ class WordTools:
 
         # Get just the words from the PoS word/tag tuples
         all_words = [item[0] for item in pos]
+        all_tags = [item[1] for item in pos]  # TODO: merge loops for efficiency?
 
-        # Generate 2- and 3-grams
-        bigrams, trigrams = self.__get_ngrams(all_words, 2, 3)
+        # Generate 2- and 3-grams (words)
+        word_2gram, word_3gram = self.__get_ngrams(all_words, 2, 3)
+
+        # Generate 2- and 3-grams (pos)
+        pos_2gram, pos_3gram = self.__get_ngrams(all_tags, 2, 3)
 
         # Map PoS tags to WordNet tags, lemmatize and find lemmas in WordNet
         wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
         lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
         formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
-        return WTReturn(all_words, formal_words, stopwords, pos, bigrams, trigrams)
+        return WTReturn(all_words, formal_words, stopwords, pos, word_2gram, word_3gram, pos_2gram, pos_3gram)
 
     def process_list(self, sentence_list, remove_digits=False, remove_stopwords=False):
 

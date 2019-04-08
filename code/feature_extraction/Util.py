@@ -1,7 +1,7 @@
 class Util:
 
     @staticmethod
-    def ratio(left, right):
+    def ratio(left, right, raw=False):
         """
         Returns the ratio between two numbers.
         If any argument is undefined or <= 0, returns -1.
@@ -9,12 +9,12 @@ class Util:
 
         # Catch edge cases
         if not left or left <= 0 or not right or right <= 0:
-            return -1
+            return -1 if not raw else 0
 
         return abs(left / right)
 
     @staticmethod
-    def diff(left, right):
+    def diff(left, right, raw=False):
         """
         Return the difference between two numbers.
         If any argument is undefined or < 0, returns -1.
@@ -22,9 +22,17 @@ class Util:
 
         # Catch edge cases (check that both sides "exist")
         if not left or left < 0 or not right or right < 0:
-            return -1
+            return -1 if not raw else 0
 
         return abs(left - right)
+
+    @staticmethod
+    def ratio_raw(left, right):
+        return Util.ratio(left, right, True)
+
+    @staticmethod
+    def diff_raw(left, right):
+        return Util.diff(left, right, True)
 
     @staticmethod
     def count_chars(obj):
@@ -94,9 +102,6 @@ class Util:
         if not obj:
             return -1
 
-        # Catch non-strings (probably list / pd.Series)
-        if not isinstance(obj, str):
-            # Average the number of tags
-            return sum(map(Util.count_words, obj)) / len(obj)
+        # TODO: Support nested lists
 
         return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
