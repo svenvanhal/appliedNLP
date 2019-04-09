@@ -93,7 +93,7 @@ class Util:
         return len(obj)
 
     @staticmethod
-    def count_tags(obj, tags: set) -> int:
+    def count_tags(obj, tags: set) -> float:
         """
         Counts the number of words with a tag in the provided tag set.
         """
@@ -102,6 +102,9 @@ class Util:
         if not obj:
             return -1
 
-        # TODO: Support nested lists
+        # Catch non-strings (probably list / pd.Series)
+        if not isinstance(obj, str):
+            # Average the length of items in a list
+            return sum(map(lambda x: Util.count_tags(x, tags), obj)) / len(obj)
 
         return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])

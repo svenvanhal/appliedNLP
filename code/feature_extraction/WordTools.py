@@ -5,9 +5,7 @@ from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
 from nltk.tag import StanfordNERTagger
 
-WTReturn = namedtuple('WTReturn',
-                      ['words', 'formal_words', 'stopwords', 'pos', 'word_bigrams', 'word_trigrams', 'pos_bigrams',
-                       'pos_trigrams'])
+WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos'])
 rng_WTReturn = range(0, len(WTReturn._fields))
 
 
@@ -19,15 +17,13 @@ class WordTools:
     morphy_tag = {'NN': wn.NOUN, 'JJ': wn.ADJ,
                   'VB': wn.VERB, 'RB': wn.ADV}
 
-    def __init__(self, st_model=None, st_jar=None):
+    def __init__(self):
 
         # Download required NLTK libraries
         self.__nltk_init()
 
         self.lem = WordNetLemmatizer()
         self.stopwords = sw.words('english')
-
-        self.st = StanfordNERTagger(st_model, st_jar)
 
     def preprocess(self, sentence):
 
@@ -52,14 +48,16 @@ class WordTools:
         if not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
-        # Convert string to tokens and recognize named entities
-        tokens = self.st.tag(word_tokenize(self.preprocess(sentence)))
+        # Convert string to tokens (and discard empty tokens)
+        tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))
 
-        # Lowercase tokens except for NE
-        tokens = [WordTools.convert_ner_case(token) for token in tokens]
+        # Lowercase tokens except for NE (and remove empty tokens with 'if token', PoS cant handle this)
+        # tokens = [WordTools.convert_ner_case(token) for token in tokens if token[0]]
+        # TODO: removed, NER tagging outside the Stanford NLP pipeline takes too long / much duplicate effort
 
         # Get PoS tags
         # See: https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
+        # Note: this is not very accurate for post titles with title case (You Will Never Believe)
         pos_raw = pos_tag(tokens)
 
         # Remove punctuation
@@ -72,28 +70,39 @@ class WordTools:
         # Split words and stop words, optionally remove from original word list
         pos, stopwords = self.__split_stopwords(pos, remove_stopwords)
 
-        # Get just the words from the PoS word/tag tuples
-        all_words = [item[0] for item in pos]
-        all_tags = [item[1] for item in pos]  # TODO: merge loops for efficiency?
+        # Separate the words from the PoS-tag tuples
+        all_words, all_tags = self.__split_words_tags(pos)
 
         # Generate 2- and 3-grams (words)
-        word_2gram, word_3gram = self.__get_ngrams(all_words, 2, 3)
+        # word_2gram, word_3gram = self.__get_ngrams(all_words, 2, 3)
+        # TODO: removed, future work
 
         # Generate 2- and 3-grams (pos)
-        pos_2gram, pos_3gram = self.__get_ngrams(all_tags, 2, 3)
+        # pos_2gram, pos_3gram = self.__get_ngrams(all_tags, 2, 3)
+        # TODO: removed, re-enable once PoS tagging is more accurate
 
         # Map PoS tags to WordNet tags, lemmatize and find lemmas in WordNet
         wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
         lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
         formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
-        return WTReturn(all_words, formal_words, stopwords, pos, word_2gram, word_3gram, pos_2gram, pos_3gram)
+        return WTReturn(all_words, formal_words, stopwords, pos)
 
     def process_list(self, sentence_list, remove_digits=False, remove_stopwords=False):
 
         results = map(lambda x: self.process(x, remove_digits, remove_stopwords), sentence_list)
         merged = tuple([i[x] for i in results] for x in rng_WTReturn)
         return WTReturn(*merged)
+
+    def __split_words_tags(self, pos_tuple):
+        words = []
+        tags = []
+
+        for tup in pos_tuple:
+            words.append(tup[0])
+            tags.append(tup[1])
+
+        return words, tags
 
     def __pos_tags_to_wordnet(self, word_tag):
         """

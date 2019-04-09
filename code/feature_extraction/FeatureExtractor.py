@@ -13,8 +13,8 @@ class FeatureExtractor:
 
     df = None
 
-    def __init__(self, data_path, tesseract_path, st_model=None, st_jar=None):
-        self.wordtools = WordTools(st_model, st_jar)
+    def __init__(self, data_path, tesseract_path):
+        self.wordtools = WordTools()
         self.imagehelper = ImageHelper(data_path, tesseract_path)
 
     def set_df(self, df: pd.DataFrame) -> None:
@@ -41,10 +41,15 @@ class FeatureExtractor:
         # Get targets
         labels = self.__get_targets(self.df['truthClass'])
 
+        # TODO: optionally convert to dask partitions and parellelize
+        # ddata = dd.from_pandas(self.df, npartitions=8)
+        # features = ddata.map_partitions(
+        #     lambda df: df.apply(lambda x: self.__get_features(x, char_based, word_based, pos_based, sim_based, debug),
+        #                         axis=1)).compute(scheduler='threads')
+
         # Get features
-        features = self.df.apply(
-            lambda x: self.__get_features(x, char_based, word_based, pos_based, sim_based, debug),
-            axis=1)
+        features = self.df.apply(lambda x: self.__get_features(x, char_based, word_based, pos_based, sim_based, debug),
+                                 axis=1)
 
         return labels, features
 
