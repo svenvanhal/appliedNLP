@@ -3,7 +3,6 @@ from collections import namedtuple
 from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
-from nltk.tag import StanfordNERTagger
 
 WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos'])
 rng_WTReturn = range(0, len(WTReturn._fields))
@@ -35,7 +34,7 @@ class WordTools:
 
         return sentence
 
-    def process(self, sentence, remove_digits=False, remove_stopwords=False):
+    def process(self, sentence, max_words=None, remove_digits=False, remove_stopwords=False):
         """
         Preprocess string, tokenize, get PoS tags, lookup lemmatized words in WordNet and return:
             - All words (tokens) in the sentence
@@ -49,7 +48,8 @@ class WordTools:
             raise ValueError("Word features can only be extracted from a single string.")
 
         # Convert string to tokens (and discard empty tokens)
-        tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))
+        # Optionally cap number of words to deal with outliers
+        tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))[:max_words]
 
         # Lowercase tokens except for NE (and remove empty tokens with 'if token', PoS cant handle this)
         # tokens = [WordTools.convert_ner_case(token) for token in tokens if token[0]]
@@ -197,6 +197,10 @@ class WordTools:
             find('corpora/stopwords.zip')
         except LookupError:
             download('stopwords')
+        try:
+            find('sentiment/vader_lexicon.zip')
+        except LookupError:
+            download('vader_lexicon')
 
     @staticmethod
     def convert_ner_case(tagged):
