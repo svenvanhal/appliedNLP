@@ -7,6 +7,8 @@ from .WordTools import WordTools
 from .Util import Util
 from .ImageHelper import ImageHelper
 
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 
 class FeatureExtractor:
     required_cols = ['postText', 'targetKeywords', 'targetDescription', 'targetTitle', 'targetParagraphs']
@@ -16,6 +18,7 @@ class FeatureExtractor:
     def __init__(self, data_path, tesseract_path):
         self.wordtools = WordTools()
         self.imagehelper = ImageHelper(data_path, tesseract_path)
+        self.sid = SentimentIntensityAnalyzer()
 
     def set_df(self, df: pd.DataFrame) -> None:
         """
@@ -29,7 +32,7 @@ class FeatureExtractor:
         # Copy df to encapsulate changes in this class
         self.df = df.copy()
 
-    def extract_features(self, char_based=True, word_based=True, pos_based=True, sim_based=True, debug=True):
+    def extract_features(self, char_based=True, word_based=True, pos_based=True, sent_based=True, debug=True):
         """
         Extracts the relevant features from a Pandas dataframe.
         """
@@ -48,7 +51,7 @@ class FeatureExtractor:
         #                         axis=1)).compute(scheduler='threads')
 
         # Get features
-        features = self.df.apply(lambda x: self.__get_features(x, char_based, word_based, pos_based, sim_based, debug),
+        features = self.df.apply(lambda x: self.__get_features(x, char_based, word_based, pos_based, sent_based, debug),
                                  axis=1)
 
         return labels, features
@@ -73,7 +76,7 @@ class FeatureExtractor:
         for var1, var2 in combinations(data, 2):
             features["{}_{}_{}".format(name, var1, var2)] = func(data[var1], data[var2])
 
-    def __get_features(self, row, char_based=True, word_based=True, pos_based=True, sim_based=True, debug=True):
+    def __get_features(self, row, char_based=True, word_based=True, pos_based=True, sent_based=True, debug=True):
         """
         Extracts features from dataset row.
 
@@ -93,10 +96,10 @@ class FeatureExtractor:
         article_par = row['targetParagraphs']
 
         # Prep
-        proc_post_title = self.wordtools.process(post_title)
-        proc_article_title = self.wordtools.process(article_title)
+        proc_post_title = self.wordtools.process(post_title, 35)
+        proc_article_title = self.wordtools.process(article_title, 35)
         post_image = self.imagehelper.get_text(post_media)
-        proc_post_image = self.wordtools.process(post_image)
+        proc_post_image = self.wordtools.process(post_image, 100)
         # proc_article_kw = self.wordtools.process(article_kw)
         # proc_article_desc = self.wordtools.process(article_desc)
         # proc_article_par = self.wordtools.process_list(article_par)
@@ -209,4 +212,35 @@ class FeatureExtractor:
                 self.combi_dict2feature(features, 'ratioTags_' + repr(tag_set), num_pos_tags, Util.ratio_raw)
                 self.combi_dict2feature(features, 'diffTags_' + repr(tag_set), num_pos_tags, Util.diff_raw)
 
+        if sent_based:
+            sentiment = OrderedDict()
+            sentiment['post_title'] = self.__get_sent(post_title)
+            sentiment['article_title'] = self.__get_sent(article_title)
+            # sentiment['post_image'] = self.__get_sent(post_image)
+            # sentiment['article_kw'] = self.__get_sent(article_kw)
+            # sentiment['article_desc'] = self.__get_sent(article_desc)
+            # sentiment['article_par'] = self.__get_sent(article_par)
+
+            # Generate features
+            self.dict2feature(features, 'sentiment', sentiment)
+            # self.combi_dict2feature(features, 'ratioSentiment', sentiment, Util.ratio_raw)
+            self.combi_dict2feature(features, 'diffSentiment', sentiment,
+                                    lambda a, b: abs(a - b))  # Custom lambda because Util.diff can't handle < 1
+
         return features
+
+    def __get_sent(self, obj):
+
+        if not obj or not obj[0]:
+            return 0
+
+        if not isinstance(obj, str):
+
+            sent = 0
+            for item in obj:
+                sent = sent + self.sid.polarity_scores(item)["compound"]
+
+            return sent / len(obj)
+
+        else:
+            return self.sid.polarity_scores(obj)["compound"]
