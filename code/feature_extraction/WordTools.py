@@ -34,7 +34,7 @@ class WordTools:
 
         return sentence
 
-    def process(self, sentence, max_words=None, remove_digits=False, remove_stopwords=False):
+    def process(self, sentence, max_words=None, processed=False, remove_digits=False, remove_stopwords=False):
         """
         Preprocess string, tokenize, get PoS tags, lookup lemmatized words in WordNet and return:
             - All words (tokens) in the sentence
@@ -44,12 +44,15 @@ class WordTools:
         Optionally filters stopwords and/or cardinal digits.
         """
 
-        if not isinstance(sentence, str):
+        if not processed and not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
-        # Convert string to tokens (and discard empty tokens)
-        # Optionally cap number of words to deal with outliers
-        tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))[:max_words]
+        if processed:
+            tokens = sentence[:max_words]
+        else:
+            # Convert string to tokens (and discard empty tokens)
+            # Optionally cap number of words to deal with outliers
+            tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))[:max_words]
 
         # Lowercase tokens except for NE (and remove empty tokens with 'if token', PoS cant handle this)
         # tokens = [WordTools.convert_ner_case(token) for token in tokens if token[0]]
