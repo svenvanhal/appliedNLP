@@ -109,9 +109,9 @@ class FeatureExtractor:
             post_image = self.imagehelper.get_text(post_image)
 
         proc_post_image = self.wordtools.process(post_image, 100, self.processed)
-        # proc_article_kw = self.wordtools.process(article_kw, processed)
-        # proc_article_desc = self.wordtools.process(article_desc, processed)
-        # proc_article_par = self.wordtools.process_list(article_par, processed)
+        proc_article_kw = self.wordtools.process(article_kw, 100, self.processed)
+        proc_article_desc = self.wordtools.process(article_desc, 100, self.processed)
+        proc_article_par = self.wordtools.process_list(article_par, None, self.processed)
 
         if debug:
             features['proc_post_title'] = proc_post_title
@@ -152,7 +152,7 @@ class FeatureExtractor:
             num_words = OrderedDict()
             num_words['post_title'] = Util.count_words(proc_post_title.words)
             num_words['article_title'] = Util.count_words(proc_article_title.words)
-            num_words['post_image'] = Util.count_words(proc_post_image.words)
+            # num_words['post_image'] = Util.count_words(proc_post_image.words)
             # num_words['article_kw'] = Util.count_words(proc_article_kw.words)
             # num_words['article_desc'] = Util.count_words(proc_article_desc.words)
             # num_words['article_par'] = Util.count_words(proc_article_par.words)
@@ -161,19 +161,19 @@ class FeatureExtractor:
             num_uppercase = OrderedDict()
             num_uppercase['post_title'] = Util.count_words_uppercase(proc_post_title.words)
             num_uppercase['article_title'] = Util.count_words_uppercase(proc_article_title.words)
-            num_uppercase['post_image'] = Util.count_words_uppercase(proc_post_image.words)
+            # num_uppercase['post_image'] = Util.count_words_uppercase(proc_post_image.words)
 
             # Calculate num titlecased words (first letter capitalized)
             num_titlecase = OrderedDict()
             num_titlecase['post_title'] = Util.count_words_titlecase(proc_post_title.words)
             num_titlecase['article_title'] = Util.count_words_titlecase(proc_article_title.words)
-            num_titlecase['post_image'] = Util.count_words_titlecase(proc_post_image.words)
+            # num_titlecase['post_image'] = Util.count_words_titlecase(proc_post_image.words)
 
             # Calculate num formal words
             num_formal_words = OrderedDict()
             num_formal_words['post_title'] = Util.count_words(proc_post_title.formal_words)
             num_formal_words['article_title'] = Util.count_words(proc_article_title.formal_words)
-            num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
+            # num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
             # num_formal_words['article_kw'] = Util.count_words(proc_article_kw.formal_words)
             # num_formal_words['article_desc'] = Util.count_words(proc_article_desc.formal_words)
             # num_formal_words['article_par'] = Util.count_words(proc_article_par.formal_words)
@@ -182,7 +182,7 @@ class FeatureExtractor:
             num_stopwords = OrderedDict()
             num_stopwords['post_title'] = Util.count_words(proc_post_title.stopwords)
             num_stopwords['article_title'] = Util.count_words(proc_article_title.stopwords)
-            num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
+            # num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
             # num_stopwords['article_kw'] = Util.count_words(proc_article_kw.stopwords)
             # num_stopwords['article_desc'] = Util.count_words(proc_article_desc.stopwords)
             # num_stopwords['article_par'] = Util.count_words(proc_article_par.stopwords)
@@ -215,7 +215,7 @@ class FeatureExtractor:
                 num_pos_tags = OrderedDict()
                 num_pos_tags['post_title'] = Util.count_tags(proc_post_title.pos, tag_set)
                 num_pos_tags['article_title'] = Util.count_tags(proc_article_title.pos, tag_set)
-                num_pos_tags['post_image'] = Util.count_tags(proc_post_image.pos, tag_set)
+                # num_pos_tags['post_image'] = Util.count_tags(proc_post_image.pos, tag_set)
 
                 # Generate features
                 self.dict2feature(features, 'numTags' + repr(tag_set), num_pos_tags)
@@ -233,6 +233,7 @@ class FeatureExtractor:
 
             # Generate features
             self.dict2feature(features, 'sentiment', sentiment)
+            # self.dict2feature(features, 'sentimentAbs', abs(sentiment))
             # self.combi_dict2feature(features, 'ratioSentiment', sentiment, Util.ratio_raw)
             self.combi_dict2feature(features, 'diffSentiment', sentiment,
                                     lambda a, b: abs(a - b))  # Custom lambda because Util.diff can't handle < 1

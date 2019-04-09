@@ -47,12 +47,12 @@ class WordTools:
         if not processed and not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
-        if processed:
-            tokens = sentence[:max_words]
-        else:
-            # Convert string to tokens (and discard empty tokens)
-            # Optionally cap number of words to deal with outliers
-            tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))[:max_words]
+        if not processed:
+            sentence = self.preprocess(sentence)
+
+        # Convert string to tokens (and discard empty tokens)
+        # Optionally cap number of words to deal with outliers
+        tokens = list(filter(None, word_tokenize(sentence)))[:max_words]
 
         # Lowercase tokens except for NE (and remove empty tokens with 'if token', PoS cant handle this)
         # tokens = [WordTools.convert_ner_case(token) for token in tokens if token[0]]
