@@ -178,10 +178,16 @@ class FeatureExtractor:
             self.dict2feature(features, 'numWordsTitlecase', num_titlecase)
             self.dict2feature(features, 'numFormalWords', num_formal_words)
             self.dict2feature(features, 'numStopWords', num_stopwords)
+
             self.combi_dict2feature(features, 'ratioWords', num_words, Util.ratio)
+            self.combi_dict2feature(features, 'ratioWordsUppercase', num_uppercase, Util.ratio)
+            self.combi_dict2feature(features, 'ratioWordsTitlecase', num_titlecase, Util.ratio)
             self.combi_dict2feature(features, 'ratioFormalWords', num_formal_words, Util.ratio)
             self.combi_dict2feature(features, 'ratioStopWords', num_stopwords, Util.ratio)
+
             self.combi_dict2feature(features, 'diffWords', num_words, Util.diff)
+            self.combi_dict2feature(features, 'diffWordsUppercase', num_uppercase, Util.diff)
+            self.combi_dict2feature(features, 'diffWordsTitlecase', num_titlecase, Util.diff)
             self.combi_dict2feature(features, 'diffFormalWords', num_formal_words, Util.diff)
             self.combi_dict2feature(features, 'diffStopWords', num_stopwords, Util.diff)
 

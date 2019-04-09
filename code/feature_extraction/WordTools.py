@@ -82,7 +82,7 @@ class WordTools:
         # TODO: removed, re-enable once PoS tagging is more accurate
 
         # Map PoS tags to WordNet tags, lemmatize and find lemmas in WordNet
-        wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
+        wn_pos = [self.__penn_to_wn(x) for x in pos]
         lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
         formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
@@ -116,6 +116,31 @@ class WordTools:
             tag = wn.NOUN
 
         return word_tag[0], tag
+
+    def __penn_to_wn(self, tag):
+        """
+        Convert between a Penn Treebank tag to a simplified Wordnet tag
+        Source: https://nlpforhackers.io/wordnet-sentence-similarity/
+        """
+
+        t = tag[1]
+
+        if t.startswith('N'):
+            nt = 'n'
+
+        elif t.startswith('V'):
+            nt = 'v'
+
+        elif t.startswith('J'):
+            nt = 'a'
+
+        elif t.startswith('R'):
+            nt = 'r'
+
+        else:
+            nt = 'n'
+
+        return tag[0], nt
 
     def __split_stopwords(self, words, remove=False):
         """
