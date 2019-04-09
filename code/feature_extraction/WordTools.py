@@ -3,8 +3,9 @@ from collections import namedtuple
 from nltk import download, word_tokenize, pos_tag, WordNetLemmatizer, ngrams
 from nltk.data import find
 from nltk.corpus import wordnet as wn, stopwords as sw
+from nltk.tag import StanfordNERTagger
 
-WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos', 'bigrams', 'trigrams'])
+WTReturn = namedtuple('WTReturn', ['words', 'formal_words', 'stopwords', 'pos'])
 rng_WTReturn = range(0, len(WTReturn._fields))
 
 
@@ -26,16 +27,11 @@ class WordTools:
 
     def preprocess(self, sentence):
 
-        # Remove hashtag and at symbols
-        # TODO: check if this if too harsh, maybe switch out for a regex (but is hard!!)
-        sentence = sentence.replace("#", "").replace("@", "")
-
         # Convert unrecognized unicode apostrophes back to regular ones
-        sentence = sentence.replace("‘", "'").replace("’", "'")
-        sentence = sentence.replace("“", '"').replace("”", '"')
+        sentence = sentence.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
 
-        # Convert encoded &amp; sign back
-        sentence = sentence.replace("&amp;", "&")
+        # Remove @ and # symbols (which are treated as single words by the NLTK tokenizer)
+        sentence = sentence.replace("@", "").replace("#", "")
 
         return sentence
 
@@ -52,11 +48,16 @@ class WordTools:
         if not isinstance(sentence, str):
             raise ValueError("Word features can only be extracted from a single string.")
 
-        # Convert string to tokens
-        tokens = word_tokenize(self.preprocess(sentence))
+        # Convert string to tokens (and discard empty tokens)
+        tokens = list(filter(None, word_tokenize(self.preprocess(sentence))))
 
-        # Get PoS tags (and map to WordNet tags)
+        # Lowercase tokens except for NE (and remove empty tokens with 'if token', PoS cant handle this)
+        # tokens = [WordTools.convert_ner_case(token) for token in tokens if token[0]]
+        # TODO: removed, NER tagging outside the Stanford NLP pipeline takes too long / much duplicate effort
+
+        # Get PoS tags
         # See: https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
+        # Note: this is not very accurate for post titles with title case (You Will Never Believe)
         pos_raw = pos_tag(tokens)
 
         # Remove punctuation
@@ -69,24 +70,39 @@ class WordTools:
         # Split words and stop words, optionally remove from original word list
         pos, stopwords = self.__split_stopwords(pos, remove_stopwords)
 
-        # Get just the words from the PoS word/tag tuples
-        all_words = [item[0] for item in pos]
+        # Separate the words from the PoS-tag tuples
+        all_words, all_tags = self.__split_words_tags(pos)
 
-        # Generate 2- and 3-grams
-        bigrams, trigrams = self.__get_ngrams(all_words, 2, 3)
+        # Generate 2- and 3-grams (words)
+        # word_2gram, word_3gram = self.__get_ngrams(all_words, 2, 3)
+        # TODO: removed, future work
+
+        # Generate 2- and 3-grams (pos)
+        # pos_2gram, pos_3gram = self.__get_ngrams(all_tags, 2, 3)
+        # TODO: removed, re-enable once PoS tagging is more accurate
 
         # Map PoS tags to WordNet tags, lemmatize and find lemmas in WordNet
-        wn_pos = list(map(self.__pos_tags_to_wordnet, pos))
+        wn_pos = [self.__penn_to_wn(x) for x in pos]
         lemmas = [self.lem.lemmatize(word, tag) for word, tag in wn_pos]
         formal_words = [lemma for lemma in lemmas if wn.synsets(lemma)]
 
-        return WTReturn(all_words, formal_words, stopwords, pos, bigrams, trigrams)
+        return WTReturn(all_words, formal_words, stopwords, pos)
 
     def process_list(self, sentence_list, remove_digits=False, remove_stopwords=False):
 
         results = map(lambda x: self.process(x, remove_digits, remove_stopwords), sentence_list)
         merged = tuple([i[x] for i in results] for x in rng_WTReturn)
         return WTReturn(*merged)
+
+    def __split_words_tags(self, pos_tuple):
+        words = []
+        tags = []
+
+        for tup in pos_tuple:
+            words.append(tup[0])
+            tags.append(tup[1])
+
+        return words, tags
 
     def __pos_tags_to_wordnet(self, word_tag):
         """
@@ -100,6 +116,31 @@ class WordTools:
             tag = wn.NOUN
 
         return word_tag[0], tag
+
+    def __penn_to_wn(self, tag):
+        """
+        Convert between a Penn Treebank tag to a simplified Wordnet tag
+        Source: https://nlpforhackers.io/wordnet-sentence-similarity/
+        """
+
+        t = tag[1]
+
+        if t.startswith('N'):
+            nt = 'n'
+
+        elif t.startswith('V'):
+            nt = 'v'
+
+        elif t.startswith('J'):
+            nt = 'a'
+
+        elif t.startswith('R'):
+            nt = 'r'
+
+        else:
+            nt = 'n'
+
+        return tag[0], nt
 
     def __split_stopwords(self, words, remove=False):
         """
@@ -156,3 +197,7 @@ class WordTools:
             find('corpora/stopwords.zip')
         except LookupError:
             download('stopwords')
+
+    @staticmethod
+    def convert_ner_case(tagged):
+        return tagged[0].lower() if tagged[1] == 'O' else tagged[0].title()
