@@ -132,6 +132,9 @@ class FeatureExtractor:
             self.combi_dict2feature(features, 'ratioChars', num_chars, Util.ratio)
             self.combi_dict2feature(features, 'diffChars', num_chars, Util.diff)
 
+            # Retweet feature
+            features['isRetweet'] = Util.is_retweet(post_title)
+
         if word_based:
             # Calculate num words
             num_words = OrderedDict()

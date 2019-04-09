@@ -157,3 +157,11 @@ class Util:
             return sum(map(lambda x: Util.count_tags(x, tags), obj)) / len(obj)
 
         return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
+
+    @staticmethod
+    def is_retweet(obj) -> int:
+
+        if not isinstance(obj, str):
+            return 0
+
+        return 1 if obj[:3] == 'RT ' else 0
