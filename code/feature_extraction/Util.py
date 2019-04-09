@@ -53,8 +53,8 @@ class Util:
         # Strip spaces
         processed = obj.strip().replace(" ", "")
 
-        # Return string length
-        return len(processed)
+        # Return string length (cap at 150 characters)
+        return min(len(processed), 150)
 
     @staticmethod
     def count_specific_char(obj, char):
