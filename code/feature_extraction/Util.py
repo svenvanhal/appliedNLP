@@ -76,21 +76,70 @@ class Util:
     @staticmethod
     def count_words(obj):
         """
-        Determines the number of words in a string.
+        Determines the number of words in a list.
         If the argument is undefined or an empty list, returns -1.
         """
 
-        # Catch empty post titles (and empty lists)
+        # Catch empty input args
         if not obj:
             return -1
 
-        # Catch non-strings (probably list / pd.Series)
-        if not isinstance(obj, str):
+        # Catch nested lists
+        if isinstance(obj[0], list):
+
+            # Catch empty lists
+            if not obj[0]: return -1
+
             # Average the length of items in a list
             return sum(map(Util.count_words, obj)) / len(obj)
 
         # Return string length
         return len(obj)
+
+    @staticmethod
+    def count_words_titlecase(obj):
+
+        # Catch empty post titles (and empty lists)
+        if not obj: return -1
+
+        # Catch nested lists
+        if isinstance(obj[0], list):
+
+            # Catch empty lists
+            if not obj[0]: return -1
+
+            # Average the length of items in a list
+            return sum(map(Util.count_words_titlecase, obj)) / len(obj)
+
+        words = 0
+        for word in obj:
+            if word[0].isupper(): words += 1
+
+        # Return -1 if no uppercase words
+        return words if words > 0 else -1
+
+    @staticmethod
+    def count_words_uppercase(obj):
+        # TODO: merge with count words and count titlecase
+
+        # Catch empty post titles (and empty lists)
+        if not obj: return -1
+
+        # Catch nested lists
+        if isinstance(obj[0], list):
+
+            # Catch empty lists
+            if not obj[0]: return -1
+
+            # Average the length of items in a list
+            return sum(map(Util.count_words_uppercase, obj)) / len(obj)
+
+        words = 0
+        for word in obj:
+            if word.isupper(): words += 1
+
+        # Return -1 if no uppercase words
+        return words if words > 0 else -1
 
     @staticmethod
     def count_tags(obj, tags: set) -> float:
@@ -100,10 +149,10 @@ class Util:
 
         # Catch empty post titles (and empty lists)
         if not obj:
-            return -1
+            return 0
 
         # Catch non-strings (probably list / pd.Series)
-        if not isinstance(obj, str):
+        if isinstance(obj[0], list):
             # Average the length of items in a list
             return sum(map(lambda x: Util.count_tags(x, tags), obj)) / len(obj)
 

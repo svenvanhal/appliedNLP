@@ -87,16 +87,16 @@ class FeatureExtractor:
         # Get relevant fields
         post_title = row['postText'][0]  # Assumption: postText always has one item
         article_title = row['targetTitle']
-        # post_media = row['postMedia']
-        # article_kw = row['targetKeywords']
-        # article_desc = row['targetDescription']
-        # article_par = row['targetParagraphs']
+        post_media = row['postMedia']
+        article_kw = row['targetKeywords']
+        article_desc = row['targetDescription']
+        article_par = row['targetParagraphs']
 
         # Prep
         proc_post_title = self.wordtools.process(post_title)
         proc_article_title = self.wordtools.process(article_title)
-        # post_image = self.imagehelper.get_text(post_media)
-        # proc_post_image = self.wordtools.process(post_image)
+        post_image = self.imagehelper.get_text(post_media)
+        proc_post_image = self.wordtools.process(post_image)
         # proc_article_kw = self.wordtools.process(article_kw)
         # proc_article_desc = self.wordtools.process(article_desc)
         # proc_article_par = self.wordtools.process_list(article_par)
@@ -112,19 +112,19 @@ class FeatureExtractor:
             num_chars = OrderedDict()
             num_chars['post_title'] = Util.count_chars(post_title)
             num_chars['article_title'] = Util.count_chars(article_title)
-            # num_chars['post_image'] = Util.count_chars(post_image)
-            # num_chars['article_kw'] = Util.count_chars(article_kw)
-            # num_chars['article_desc'] = Util.count_chars(article_desc)
-            # num_chars['article_par'] = Util.count_chars(article_par)
+            num_chars['post_image'] = Util.count_chars(post_image)
+            num_chars['article_kw'] = Util.count_chars(article_kw)
+            num_chars['article_desc'] = Util.count_chars(article_desc)
+            num_chars['article_par'] = Util.count_chars(article_par)
 
             # Calculate num question marks
             num_qmarks = OrderedDict()
             num_qmarks['post_title'] = Util.count_specific_char(post_title, '?')
             num_qmarks['article_title'] = Util.count_specific_char(article_title, '?')
-            # num_qmarks['post_image'] = Util.count_specific_char(post_image, '?')
-            # num_qmarks['article_keywords'] = Util.count_specific_char(article_kw, '?')
-            # num_qmarks['article_desc'] = Util.count_specific_char(article_desc, '?')
-            # num_qmarks['article_par'] = Util.count_specific_char(article_par, '?')
+            num_qmarks['post_image'] = Util.count_specific_char(post_image, '?')
+            num_qmarks['article_keywords'] = Util.count_specific_char(article_kw, '?')
+            num_qmarks['article_desc'] = Util.count_specific_char(article_desc, '?')
+            num_qmarks['article_par'] = Util.count_specific_char(article_par, '?')
 
             # Generate features
             self.dict2feature(features, 'numChars', num_chars)
@@ -137,16 +137,28 @@ class FeatureExtractor:
             num_words = OrderedDict()
             num_words['post_title'] = Util.count_words(proc_post_title.words)
             num_words['article_title'] = Util.count_words(proc_article_title.words)
-            # num_words['post_image'] = Util.count_words(proc_post_image.words)
+            num_words['post_image'] = Util.count_words(proc_post_image.words)
             # num_words['article_kw'] = Util.count_words(proc_article_kw.words)
             # num_words['article_desc'] = Util.count_words(proc_article_desc.words)
             # num_words['article_par'] = Util.count_words(proc_article_par.words)
+
+            # Calculate num uppercase words
+            num_uppercase = OrderedDict()
+            num_uppercase['post_title'] = Util.count_words_uppercase(proc_post_title.words)
+            num_uppercase['article_title'] = Util.count_words_uppercase(proc_article_title.words)
+            num_uppercase['post_image'] = Util.count_words_uppercase(proc_post_image.words)
+
+            # Calculate num titlecased words (first letter capitalized)
+            num_titlecase = OrderedDict()
+            num_titlecase['post_title'] = Util.count_words_titlecase(proc_post_title.words)
+            num_titlecase['article_title'] = Util.count_words_titlecase(proc_article_title.words)
+            num_titlecase['post_image'] = Util.count_words_titlecase(proc_post_image.words)
 
             # Calculate num formal words
             num_formal_words = OrderedDict()
             num_formal_words['post_title'] = Util.count_words(proc_post_title.formal_words)
             num_formal_words['article_title'] = Util.count_words(proc_article_title.formal_words)
-            # num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
+            num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
             # num_formal_words['article_kw'] = Util.count_words(proc_article_kw.formal_words)
             # num_formal_words['article_desc'] = Util.count_words(proc_article_desc.formal_words)
             # num_formal_words['article_par'] = Util.count_words(proc_article_par.formal_words)
@@ -155,13 +167,15 @@ class FeatureExtractor:
             num_stopwords = OrderedDict()
             num_stopwords['post_title'] = Util.count_words(proc_post_title.stopwords)
             num_stopwords['article_title'] = Util.count_words(proc_article_title.stopwords)
-            # num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
+            num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
             # num_stopwords['article_kw'] = Util.count_words(proc_article_kw.stopwords)
             # num_stopwords['article_desc'] = Util.count_words(proc_article_desc.stopwords)
             # num_stopwords['article_par'] = Util.count_words(proc_article_par.stopwords)
 
             # Generate features
             self.dict2feature(features, 'numWords', num_words)
+            self.dict2feature(features, 'numWordsUppercase', num_uppercase)
+            self.dict2feature(features, 'numWordsTitlecase', num_titlecase)
             self.dict2feature(features, 'numFormalWords', num_formal_words)
             self.dict2feature(features, 'numStopWords', num_stopwords)
             self.combi_dict2feature(features, 'ratioWords', num_words, Util.ratio)
