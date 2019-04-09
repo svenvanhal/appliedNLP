@@ -14,13 +14,14 @@ class FeatureExtractor:
     required_cols = ['postText', 'targetKeywords', 'targetDescription', 'targetTitle', 'targetParagraphs']
 
     df = None
+    processed = False
 
     def __init__(self, data_path, tesseract_path):
         self.wordtools = WordTools()
         self.imagehelper = ImageHelper(data_path, tesseract_path)
         self.sid = SentimentIntensityAnalyzer()
 
-    def set_df(self, df: pd.DataFrame) -> None:
+    def set_df(self, df: pd.DataFrame, processed=False) -> None:
         """
         Sets dataframe to extract features from.
         """
@@ -29,8 +30,9 @@ class FeatureExtractor:
         if not set(self.required_cols).issubset(df.columns):
             raise ValueError("DataFrame does not contain all required columns ('%s')" % "', '".join(self.required_cols))
 
-        # Copy df to encapsulate changes in this class
+        # Copy df to encap sulate changes in this class
         self.df = df.copy()
+        self.processed = processed
 
     def extract_features(self, char_based=True, word_based=True, pos_based=True, sent_based=True, debug=True):
         """
@@ -88,21 +90,28 @@ class FeatureExtractor:
         # ------
 
         # Get relevant fields
-        post_title = row['postText'][0]  # Assumption: postText always has one item
+        post_title = row['postText']
+
+        if not self.processed:
+            post_title = post_title[0]  # Assumption: postText always has one item
+
         article_title = row['targetTitle']
-        post_media = row['postMedia']
+        post_image = row['postMedia']
         article_kw = row['targetKeywords']
         article_desc = row['targetDescription']
         article_par = row['targetParagraphs']
 
         # Prep
-        proc_post_title = self.wordtools.process(post_title, 35)
-        proc_article_title = self.wordtools.process(article_title, 35)
-        post_image = self.imagehelper.get_text(post_media)
-        proc_post_image = self.wordtools.process(post_image, 100)
-        # proc_article_kw = self.wordtools.process(article_kw)
-        # proc_article_desc = self.wordtools.process(article_desc)
-        # proc_article_par = self.wordtools.process_list(article_par)
+        proc_post_title = self.wordtools.process(post_title, 35, self.processed)
+        proc_article_title = self.wordtools.process(article_title, 35, self.processed)
+
+        if not self.processed:
+            post_image = self.imagehelper.get_text(post_image)
+
+        proc_post_image = self.wordtools.process(post_image, 100, self.processed)
+        # proc_article_kw = self.wordtools.process(article_kw, processed)
+        # proc_article_desc = self.wordtools.process(article_desc, processed)
+        # proc_article_par = self.wordtools.process_list(article_par, processed)
 
         if debug:
             features['proc_post_title'] = proc_post_title
@@ -206,6 +215,7 @@ class FeatureExtractor:
                 num_pos_tags = OrderedDict()
                 num_pos_tags['post_title'] = Util.count_tags(proc_post_title.pos, tag_set)
                 num_pos_tags['article_title'] = Util.count_tags(proc_article_title.pos, tag_set)
+                num_pos_tags['post_image'] = Util.count_tags(proc_post_image.pos, tag_set)
 
                 # Generate features
                 self.dict2feature(features, 'numTags' + repr(tag_set), num_pos_tags)
@@ -231,16 +241,20 @@ class FeatureExtractor:
 
     def __get_sent(self, obj):
 
-        if not obj or not obj[0]:
-            return 0
+        if not obj:
+            return -1
 
         if not isinstance(obj, str):
 
-            sent = 0
+            total_sent = 0
             for item in obj:
-                sent = sent + self.sid.polarity_scores(item)["compound"]
 
-            return sent / len(obj)
+                # Bail if any of the items in the list is not set
+                if not item: return -1
+
+                total_sent = total_sent + self.sid.polarity_scores(item)["compound"]
+
+            return total_sent / len(obj)
 
         else:
             return self.sid.polarity_scores(obj)["compound"]
