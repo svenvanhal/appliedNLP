@@ -53,8 +53,8 @@ class Util:
         # Strip spaces
         processed = obj.strip().replace(" ", "")
 
-        # Return string length (cap at 150 characters)
-        return min(len(processed), 150)
+        # Return string length (cap at 300 characters)
+        return len(processed)
 
     @staticmethod
     def count_specific_char(obj, char):
@@ -97,49 +97,26 @@ class Util:
         return len(obj)
 
     @staticmethod
-    def count_words_titlecase(obj):
+    def count_words_case(obj):
+        """Returns (num_titlecase, num_uppercase)"""
 
         # Catch empty post titles (and empty lists)
-        if not obj: return 0
+        if not obj:
+            return 0, 0
 
-        # Catch nested lists
-        if isinstance(obj[0], list):
-
-            # Catch empty lists
-            if not obj[0]: return 0
-
-            # Average the length of items in a list
-            return sum(map(Util.count_words_titlecase, obj)) / len(obj)
-
-        words = 0
+        tc = 0
+        uc = 0
         for word in obj:
-            if word[0].isupper(): words += 1
+            if word.istitle():
+                tc += 1
+            elif word.isupper():
+                uc += 1
+
+        if tc <= 0: tc = 0
+        if uc <= 0: uc = 0
 
         # Return 0 if no uppercase words
-        return words if words > 0 else 0
-
-    @staticmethod
-    def count_words_uppercase(obj):
-        # TODO: merge with count words and count titlecase
-
-        # Catch empty post titles (and empty lists)
-        if not obj: return 0
-
-        # Catch nested lists
-        if isinstance(obj[0], list):
-
-            # Catch empty lists
-            if not obj[0]: return 0
-
-            # Average the length of items in a list
-            return sum(map(Util.count_words_uppercase, obj)) / len(obj)
-
-        words = 0
-        for word in obj:
-            if word.isupper(): words += 1
-
-        # Return 0 if no uppercase words
-        return words if words > 0 else 0
+        return tc, uc
 
     @staticmethod
     def count_tags(obj, tags: set) -> float:
@@ -156,7 +133,9 @@ class Util:
             # Average the length of items in a list
             return sum(map(lambda x: Util.count_tags(x, tags), obj)) / len(obj)
 
-        return sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
+        num_tags = sum([1 for pos_tuple in obj if pos_tuple[1] in tags])
+
+        return num_tags if num_tags > 0 else 0
 
     @staticmethod
     def is_retweet(obj) -> int:
@@ -165,3 +144,19 @@ class Util:
             return 0
 
         return 1 if obj[:3] == 'RT ' else 0
+
+    @staticmethod
+    def count_words_intersection(list1: list, list2: list) -> int:
+        if not list1 or not list2:
+            return 0
+
+        set1_lower = {x.lower() for x in list1}
+        set2_lower = {y.lower() for y in list2}
+
+        if not set1_lower or not set2_lower:
+            return 0
+
+        # Count number of words in set intersection
+        num_common_words = len(set1_lower & set2_lower)
+
+        return num_common_words / len(set1_lower | set2_lower) if num_common_words > 0 else 0

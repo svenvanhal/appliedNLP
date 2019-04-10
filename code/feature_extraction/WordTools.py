@@ -67,7 +67,7 @@ class WordTools:
         pos = self.__filter_tags(pos_raw, {'.', ':', ',', "''", '$', "``", "(", ")"})
 
         # Optionally remove digits (PoS tag 'CD' - Cardinal Digit)
-        if not remove_digits:
+        if remove_digits:
             pos = self.__filter_tags(pos, {'CD'})
 
         # Split words and stop words, optionally remove from original word list
@@ -91,9 +91,9 @@ class WordTools:
 
         return WTReturn(all_words, formal_words, stopwords, pos)
 
-    def process_list(self, sentence_list, remove_digits=False, remove_stopwords=False):
+    def process_list(self, sentence_list, max_words=None, processed=False, remove_digits=False, remove_stopwords=False):
 
-        results = map(lambda x: self.process(x, remove_digits, remove_stopwords), sentence_list)
+        results = map(lambda x: self.process(x, max_words, processed, remove_digits, remove_stopwords), sentence_list)
         merged = tuple([i[x] for i in results] for x in rng_WTReturn)
         return WTReturn(*merged)
 

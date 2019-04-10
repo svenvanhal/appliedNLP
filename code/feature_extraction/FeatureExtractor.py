@@ -109,9 +109,9 @@ class FeatureExtractor:
             post_image = self.imagehelper.get_text(post_image)
 
         proc_post_image = self.wordtools.process(post_image, 100, self.processed)
-        proc_article_kw = self.wordtools.process(article_kw, 100, self.processed)
-        proc_article_desc = self.wordtools.process(article_desc, 100, self.processed)
-        proc_article_par = self.wordtools.process_list(article_par, None, self.processed)
+        # proc_article_kw = self.wordtools.process(article_kw, 100, self.processed)
+        # proc_article_desc = self.wordtools.process(article_desc, 100, self.processed)
+        # proc_article_par = self.wordtools.process_list(article_par, None, self.processed)
 
         if debug:
             features['proc_post_title'] = proc_post_title
@@ -152,28 +152,24 @@ class FeatureExtractor:
             num_words = OrderedDict()
             num_words['post_title'] = Util.count_words(proc_post_title.words)
             num_words['article_title'] = Util.count_words(proc_article_title.words)
-            # num_words['post_image'] = Util.count_words(proc_post_image.words)
+            num_words['post_image'] = Util.count_words(proc_post_image.words)
             # num_words['article_kw'] = Util.count_words(proc_article_kw.words)
             # num_words['article_desc'] = Util.count_words(proc_article_desc.words)
             # num_words['article_par'] = Util.count_words(proc_article_par.words)
 
             # Calculate num uppercase words
             num_uppercase = OrderedDict()
-            num_uppercase['post_title'] = Util.count_words_uppercase(proc_post_title.words)
-            num_uppercase['article_title'] = Util.count_words_uppercase(proc_article_title.words)
-            # num_uppercase['post_image'] = Util.count_words_uppercase(proc_post_image.words)
-
-            # Calculate num titlecased words (first letter capitalized)
             num_titlecase = OrderedDict()
-            num_titlecase['post_title'] = Util.count_words_titlecase(proc_post_title.words)
-            num_titlecase['article_title'] = Util.count_words_titlecase(proc_article_title.words)
-            # num_titlecase['post_image'] = Util.count_words_titlecase(proc_post_image.words)
+            num_titlecase['post_title'], num_uppercase['post_title'] = Util.count_words_case(proc_post_title.words)
+            num_titlecase['article_title'], num_uppercase['article_title'] = Util.count_words_case(
+                proc_article_title.words)
+            num_titlecase['post_image'], num_uppercase['post_image'] = Util.count_words_case(proc_post_image.words)
 
             # Calculate num formal words
             num_formal_words = OrderedDict()
             num_formal_words['post_title'] = Util.count_words(proc_post_title.formal_words)
             num_formal_words['article_title'] = Util.count_words(proc_article_title.formal_words)
-            # num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
+            num_formal_words['post_image'] = Util.count_words(proc_post_image.formal_words)
             # num_formal_words['article_kw'] = Util.count_words(proc_article_kw.formal_words)
             # num_formal_words['article_desc'] = Util.count_words(proc_article_desc.formal_words)
             # num_formal_words['article_par'] = Util.count_words(proc_article_par.formal_words)
@@ -182,10 +178,14 @@ class FeatureExtractor:
             num_stopwords = OrderedDict()
             num_stopwords['post_title'] = Util.count_words(proc_post_title.stopwords)
             num_stopwords['article_title'] = Util.count_words(proc_article_title.stopwords)
-            # num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
+            num_stopwords['post_image'] = Util.count_words(proc_post_image.stopwords)
             # num_stopwords['article_kw'] = Util.count_words(proc_article_kw.stopwords)
             # num_stopwords['article_desc'] = Util.count_words(proc_article_desc.stopwords)
             # num_stopwords['article_par'] = Util.count_words(proc_article_par.stopwords)
+
+            # Similarity bag-of-words
+            features['sim_post_title_article_title'] = Util.count_words_intersection(proc_post_title.words,
+                                                                                     proc_article_title.words)
 
             # Generate features
             self.dict2feature(features, 'numWords', num_words)
